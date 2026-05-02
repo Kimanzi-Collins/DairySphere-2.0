@@ -1,0 +1,56 @@
+.inputs-page { padding: 0; min-height: 100vh; }
+.inputs-page-header { margin-bottom: 28px; }
+.inputs-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; margin-bottom: 28px; }
+
+.inputs-search-section {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; margin-bottom: 32px;
+}
+
+.inputs-cards-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px;
+}
+
+/* Input Card */
+.input-card {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px; padding: 22px;
+  transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+  position: relative; overflow: hidden;
+}
+.input-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, #10b981, transparent);
+  opacity: 0; transition: opacity 0.35s;
+}
+.input-card:hover {
+  background: rgba(255,255,255,0.05); border-color: rgba(16,185,129,0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(16,185,129,0.1);
+}
+.input-card:hover::before { opacity: 1; }
+
+.input-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+.input-card-identity { display: flex; align-items: center; gap: 14px; }
+.input-icon-box {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.input-name { font-size: 0.95rem; font-weight: 600; color: #fff; margin: 0; line-height: 1.3; }
+.input-id { font-size: 0.75rem; color: #10b981; font-weight: 600; letter-spacing: 0.5px; }
+
+.input-card-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.25s; }
+.input-card:hover .input-card-actions { opacity: 1; }
+
+.input-price-display {
+  display: flex; flex-direction: column; gap: 4px;
+  padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06);
+}
+.input-price-label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
+.input-price-value { font-size: 1.1rem; font-weight: 700; color: #10b981; }
+
+@media (max-width: 1200px) { .inputs-stats { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 600px) {
+  .inputs-stats { grid-template-columns: 1fr; }
+  .inputs-cards-grid { grid-template-columns: 1fr; }
+}

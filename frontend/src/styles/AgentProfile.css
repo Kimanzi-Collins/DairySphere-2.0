@@ -1,0 +1,126 @@
+/* ═══════════════════════════════════════════════════
+   AGENT PROFILE — Matches FarmerProfile pattern
+   ═══════════════════════════════════════════════════ */
+
+.agent-profile-page { padding: 0; min-height: 100vh; }
+
+/* Back */
+.profile-back-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: none; border: none; color: var(--text-muted);
+  font-size: 0.88rem; font-family: inherit;
+  cursor: pointer; margin-bottom: 24px;
+  transition: color 0.2s;
+}
+.profile-back-btn:hover { color: var(--text-bright); }
+
+/* Profile Card */
+.agent-profile-card {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--glass-bg-card); border: 1px solid var(--glass-border);
+  border-radius: 20px; padding: 32px; margin-bottom: 28px;
+  position: relative; overflow: hidden;
+}
+.agent-profile-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #8b5cf6, #3b82f6, #10b981);
+}
+.agent-profile-card-left { display: flex; align-items: center; gap: 24px; }
+.agent-profile-avatar {
+  width: 80px; height: 80px; border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; font-weight: 700; color: #fff;
+  flex-shrink: 0; position: relative;
+}
+.agent-profile-badges { display: flex; gap: 8px; margin-bottom: 6px; }
+.badge {
+  padding: 3px 10px; border-radius: 6px;
+  font-size: 0.68rem; font-weight: 600; letter-spacing: 0.5px;
+}
+.badge-purple { background: rgba(139,92,246,0.2); color: #a78bfa; }
+.agent-profile-name { font-size: 1.4rem; font-weight: 700; color: #fff; margin: 0 0 8px 0; }
+.agent-profile-name { font-size: 1.4rem; font-weight: 700; color: var(--text-bright); margin: 0 0 8px 0; }
+.agent-profile-meta { display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.82rem; color: var(--text-muted); }
+
+.agent-profile-earnings-box {
+  display: flex; flex-direction: column; align-items: flex-end;
+  background: var(--glass-bg-card); border: 1px solid var(--glass-border);
+  border-radius: 16px; padding: 20px 28px;
+}
+.earnings-label { font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.earnings-value { font-size: 1.5rem; font-weight: 800; color: var(--text-normal); }
+.earnings-value.positive { color: #10b981; }
+.earnings-sub { font-size: 0.75rem; color: var(--text-faint); margin-top: 4px; }
+
+/* Stats */
+.agent-profile-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 20px; margin-bottom: 28px;
+}
+
+/* Chart Section */
+.agent-profile-chart-section {
+  display: grid; grid-template-columns: 1fr 340px;
+  gap: 20px; margin-bottom: 28px;
+}
+.profile-chart-card, .profile-performance-card {
+  background: var(--glass-bg-card); border: 1px solid var(--glass-border);
+  border-radius: 16px; padding: 24px;
+}
+.profile-section-title { font-size: 1.05rem; font-weight: 700; color: var(--text-bright); margin: 0 0 4px 0; }
+.profile-section-sub { font-size: 0.78rem; color: var(--text-faint); margin: 0 0 20px 0; }
+.profile-chart-empty {
+  display: flex; align-items: center; justify-content: center;
+  height: 200px; color: #4b5563; font-size: 0.85rem;
+}
+
+/* Tooltip */
+.profile-chart-tooltip {
+  background: var(--base-200); border: 1px solid var(--glass-border);
+  border-radius: 10px; padding: 12px 16px;
+  font-size: 0.8rem;
+}
+.tooltip-label { color: var(--text-muted); margin: 0 0 6px 0; font-weight: 600; }
+.profile-chart-tooltip p { margin: 2px 0; }
+
+/* Performance */
+.performance-rows { display: flex; flex-direction: column; gap: 0; }
+.perf-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.85rem; color: var(--text-muted);
+}
+.perf-row:last-child { border-bottom: none; }
+.perf-value { font-weight: 700; color: var(--text-bright); }
+.perf-value.positive { color: #10b981; }
+
+/* Table Section */
+.agent-profile-table-section {
+  background: var(--glass-bg-card); border: 1px solid var(--glass-border);
+  border-radius: 16px; padding: 24px; margin-bottom: 28px;
+}
+.profile-table-wrap { overflow-x: auto; }
+.profile-table { width: 100%; border-collapse: collapse; }
+.profile-table th {
+  text-align: left; padding: 10px 16px;
+  font-size: 0.7rem; font-weight: 600; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.profile-table td {
+  padding: 14px 16px; font-size: 0.85rem; color: var(--text-muted);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.profile-table tr:hover td { background: rgba(255,255,255,0.02); }
+.month-cell { color: var(--text-bright); font-weight: 600; }
+td.positive { color: #10b981; font-weight: 600; }
+
+@media (max-width: 1200px) {
+  .agent-profile-stats { grid-template-columns: repeat(2,1fr); }
+  .agent-profile-chart-section { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .agent-profile-card { flex-direction: column; align-items: flex-start; gap: 20px; }
+  .agent-profile-earnings-box { align-items: flex-start; }
+  .agent-profile-stats { grid-template-columns: 1fr; }
+}

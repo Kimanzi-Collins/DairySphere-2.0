@@ -1,0 +1,59 @@
+.mq-page { padding: 0; min-height: 100vh; }
+.mq-page-header { margin-bottom: 28px; }
+.mq-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; margin-bottom: 32px; }
+
+.mq-grades-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+}
+
+/* Grade Card */
+.grade-card {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 20px; padding: 32px; text-align: center;
+  border-top: 3px solid;
+  transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+.grade-card:hover {
+  background: rgba(255,255,255,0.05);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.grade-badge {
+  width: 64px; height: 64px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 800; color: #fff;
+  margin: 0 auto 20px;
+  letter-spacing: 1px;
+}
+
+.grade-info { margin-bottom: 24px; }
+.grade-label { display: block; font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
+.grade-id { display: block; font-size: 0.75rem; color: #64748b; }
+
+.grade-price-section {
+  padding: 20px 0; margin-bottom: 20px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.grade-price-label {
+  display: block; font-size: 0.65rem; font-weight: 600;
+  color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+}
+.grade-price-value { font-size: 1.5rem; font-weight: 800; }
+
+.grade-edit-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 20px; border-radius: 8px; font-size: 0.8rem;
+  font-weight: 600; font-family: inherit; cursor: pointer;
+  background: transparent; border: 1px solid;
+  transition: all 0.25s;
+}
+.grade-edit-btn:hover { opacity: 0.8; transform: translateY(-1px); }
+
+@media (max-width: 1000px) { .mq-grades-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 1200px) { .mq-stats { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 600px) {
+  .mq-stats { grid-template-columns: 1fr; }
+  .mq-grades-grid { grid-template-columns: 1fr; }
+}

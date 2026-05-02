@@ -1,0 +1,449 @@
+/* ═══════════════════════════════════════════════════════════════
+   AGENTS PAGE — Glass Dark Theme (matches Farmers.css pattern)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Page Container ── */
+.agents-page {
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* ── Loading State ── */
+.agents-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  gap: 16px;
+  color: #94a3b8;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(139, 92, 246, 0.2);
+  border-top-color: #8b5cf6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Page Header ── */
+.agents-page-header {
+  margin-bottom: 28px;
+}
+
+.agents-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.agents-date {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* ── Stats Grid ── */
+.agents-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 1200px) {
+  .agents-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .agents-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Search Section ── */
+.agents-search-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.agents-search-bar {
+  position: relative;
+  flex: 1;
+  max-width: 480px;
+}
+
+.agents-search-bar .search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+.agents-search-input {
+  width: 100%;
+  padding: 10px 16px 10px 42px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.85rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.agents-search-input::placeholder {
+  color: #4b5563;
+}
+
+.agents-search-input:focus {
+  border-color: rgba(139, 92, 246, 0.5);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.agents-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.agents-add-btn:hover {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+}
+
+/* ── Empty State ── */
+.agents-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.agents-empty-icon {
+  color: #334155;
+  margin-bottom: 16px;
+}
+
+.agents-empty h3 {
+  color: #94a3b8;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.agents-empty p {
+  color: #4b5563;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* ── Location Group ── */
+.agents-location-group {
+  margin-bottom: 36px;
+}
+
+.agents-location-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.location-dot {
+  width: 8px;
+  height: 8px;
+  background: #8b5cf6;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.location-pin-icon {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.location-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.location-count {
+  font-size: 0.7rem;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ── Cards Grid ── */
+.agents-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 18px;
+}
+
+@media (max-width: 768px) {
+  .agents-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Agent Card ── */
+.agent-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 22px;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.agent-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #8b5cf6, transparent);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.agent-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(139, 92, 246, 0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3),
+              0 0 0 1px rgba(139, 92, 246, 0.1);
+}
+
+.agent-card:hover::before {
+  opacity: 1;
+}
+
+/* ── Card Header ── */
+.agent-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.agent-card-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.agent-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffffff;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+.agent-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.agent-id {
+  font-size: 0.75rem;
+  color: #8b5cf6;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* ── Card Actions ── */
+.agent-card-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.agent-card:hover .agent-card-actions {
+  opacity: 1;
+}
+
+.agent-action-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.agent-action-btn.edit:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: #a78bfa;
+}
+
+.agent-action-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+/* ── Card Details ── */
+.agent-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.agent-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.agent-detail-row svg {
+  color: #4b5563;
+  flex-shrink: 0;
+}
+
+.agent-detail-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Card Footer (Commission) ── */
+.agent-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.agent-commission-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.commission-label {
+  font-size: 0.65rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.commission-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.commission-value.highlight {
+  color: #10b981;
+}
+
+.agent-commission-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Scrollbar ── */
+.agents-page::-webkit-scrollbar {
+  width: 6px;
+}
+
+.agents-page::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.agents-page::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.agents-page::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.agent-view-profile-btn {
+  width: 100%;
+  margin-top: 18px;
+  padding: 10px;
+  background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(139,92,246,0.05));
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: 10px;
+  color: #a78bfa;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.agent-view-profile-btn:hover {
+  background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.1));
+  border-color: rgba(139,92,246,0.4);
+  color: #c4b5fd;
+  transform: translateY(-1px);
+}
