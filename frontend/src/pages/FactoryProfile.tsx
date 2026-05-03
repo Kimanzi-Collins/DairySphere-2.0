@@ -4,6 +4,7 @@ import { gsap } from 'gsap';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { FileText, Droplet, DollarSign, TrendingUp } from 'lucide-react';
 import StatCard from '../components/common/StatCard';
+import ExportButtons from '../components/common/ExportButtons';
 import { getEntityProfilePic } from '../utils/entityProfilePics';
 import { factoriesAPI, deliveriesAPI } from '../api';
 import '../styles/FactoryProfile.css';
@@ -20,7 +21,7 @@ const FactoryProfile = () => {
 
   const load = async () => {
     try {
-      const facObj = await factoriesAPI.getOne(id || '');
+      const facObj = await factoriesAPI.getOne(id || '') as any;
       console.log('Factory profile:', facObj);
       setFactory(facObj);
 
@@ -81,6 +82,25 @@ const FactoryProfile = () => {
   const totalAmount = deliveries.reduce((s, d) => s + Number(d.Amount || d.TotalAmount || 0), 0);
   const avgLitres = totalDeliveries > 0 ? totalLitres / totalDeliveries : 0;
   const factoryProfilePic = factory?.FactoryId ? getEntityProfilePic('factories', factory.FactoryId) : null;
+  const exportRows = monthlyData.map((m) => ({
+    month: m.month,
+    deliveries: m.deliveries,
+    totalLitres: m.totalLitres,
+    totalAmount: m.totalAmount,
+  }));
+  const exportProfile = factory ? {
+    imageUrl: factoryProfilePic || undefined,
+    title: factory.FactoryName,
+    subtitle: `Factory statement for ${factory.FactoryId}`,
+    details: [
+      { label: 'Factory ID', value: factory.FactoryId },
+      { label: 'Location', value: getField(factory, 'Location') || 'N/A' },
+      { label: 'Contact', value: getField(factory, 'Contact', 'Phone') || 'N/A' },
+      { label: 'Email', value: getField(factory, 'Email') || 'N/A' },
+      { label: 'Deliveries', value: totalDeliveries },
+      { label: 'Milk Received', value: `${totalLitres.toLocaleString('en-KE', { minimumFractionDigits: 2 })} L` },
+    ],
+  } : undefined;
 
   const customTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload) return null;
@@ -122,10 +142,25 @@ const FactoryProfile = () => {
             </div>
           </div>
         </div>
-        <div className="factory-profile-earnings-box">
-          <span className="earnings-label">TOTAL MILK RECEIVED</span>
-          <span className="earnings-value positive">{totalLitres.toLocaleString('en-KE', { minimumFractionDigits: 2 })} L</span>
-          <span className="earnings-sub">{totalDeliveries} deliveries</span>
+        <div className="profile-export-panel">
+          <div className="factory-profile-earnings-box">
+            <span className="earnings-label">TOTAL MILK RECEIVED</span>
+            <span className="earnings-value positive">{totalLitres.toLocaleString('en-KE', { minimumFractionDigits: 2 })} L</span>
+            <span className="earnings-sub">{totalDeliveries} deliveries</span>
+          </div>
+          <ExportButtons
+            className="profile-export-actions"
+            filename={`${factory.FactoryId}-${factory.FactoryName}-statement`}
+            signatureColor="#3b82f6"
+            profile={exportProfile}
+            columns={[
+              { header: 'Month', key: 'month', width: 16 },
+              { header: 'Deliveries', key: 'deliveries', width: 12 },
+              { header: 'Litres', key: 'totalLitres', width: 16 },
+              { header: 'Amount', key: 'totalAmount', isCurrency: true, width: 18 },
+            ]}
+            rows={exportRows}
+          />
         </div>
       </div>
 

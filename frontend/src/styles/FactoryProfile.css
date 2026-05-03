@@ -30,6 +30,13 @@
   background: var(--glass-bg-card); border: 1px solid var(--glass-border);
   border-radius: 16px; padding: 20px 28px;
 }
+.profile-export-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
 
 .factory-profile-stats {
   display: grid; grid-template-columns: repeat(4, 1fr);
@@ -52,6 +59,7 @@
 }
 @media (max-width: 768px) {
   .factory-profile-card { flex-direction: column; align-items: flex-start; gap: 20px; }
+  .profile-export-panel { align-items: flex-start; width: 100%; }
   .factory-profile-earnings-box { align-items: flex-start; }
   .factory-profile-stats { grid-template-columns: 1fr; }
 }

@@ -5,11 +5,19 @@ import html2canvas from 'html2canvas';
 
 type ColumnDef = { header: string; key: string; width?: number; isCurrency?: boolean };
 
+type ProfileExportInfo = {
+  imageUrl?: string;
+  title: string;
+  subtitle?: string;
+  details?: { label: string; value: unknown }[];
+};
+
 type ExportPdfOptions = {
   logoUrl?: string;
   signatureColor?: string;
   subtitle?: string;
   preparedBy?: string;
+  profile?: ProfileExportInfo;
 };
 
 function safeText(value: unknown) {
@@ -32,12 +40,14 @@ export async function exportToExcel(
   filename: string,
   columns: ColumnDef[],
   rows: Record<string, any>[],
-  options?: { currencyKeys?: string[]; signatureColor?: string }
+  options?: { currencyKeys?: string[]; signatureColor?: string; profile?: ProfileExportInfo }
 ) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Report');
 
   const lastCol = String.fromCharCode(65 + Math.max(columns.length - 1, 0));
+  sheet.columns = columns.map((c) => ({ key: c.key, width: c.width || 20 }));
+
   sheet.mergeCells(`A1:${lastCol}2`);
   const titleCell = sheet.getCell('A1');
   titleCell.value = formatReportTitle(filename);
@@ -45,11 +55,45 @@ export async function exportToExcel(
   titleCell.font = { size: 16, bold: true, color: { argb: '0F172A' } };
   titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F8FAFC' } } as ExcelJS.FillPattern;
 
-  sheet.columns = columns.map((c) => ({ header: c.header, key: c.key, width: c.width || 20 }));
-  sheet.getRow(3).font = { bold: true, color: { argb: '334155' } };
-  sheet.getRow(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } } as ExcelJS.FillPattern;
+  let headerRowNumber = 3;
+  if (options?.profile) {
+    sheet.mergeCells(`A3:${lastCol}3`);
+    const profileTitle = sheet.getCell('A3');
+    profileTitle.value = options.profile.title;
+    profileTitle.font = { size: 13, bold: true, color: { argb: '111827' } };
 
-  rows.forEach((row) => sheet.addRow(row));
+    sheet.mergeCells(`A4:${lastCol}4`);
+    const profileSubtitle = sheet.getCell('A4');
+    profileSubtitle.value = options.profile.subtitle || '';
+    profileSubtitle.font = { size: 10, color: { argb: '64748B' } };
+
+    const details = options.profile.details || [];
+    if (details.length) {
+      sheet.mergeCells(`A5:${lastCol}5`);
+      const detailsCell = sheet.getCell('A5');
+      detailsCell.value = details.map((item) => `${item.label}: ${safeText(item.value)}`).join('   |   ');
+      detailsCell.font = { size: 10, color: { argb: '334155' } };
+    }
+
+    headerRowNumber = 7;
+  }
+
+  const headerRow = sheet.getRow(headerRowNumber);
+  columns.forEach((column, index) => {
+    headerRow.getCell(index + 1).value = column.header;
+  });
+  headerRow.font = { bold: true, color: { argb: '334155' } };
+  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } } as ExcelJS.FillPattern;
+  headerRow.eachCell((cell) => {
+    cell.border = { bottom: { style: 'thin', color: { argb: 'E2E8F0' } } };
+  });
+
+  rows.forEach((row) => {
+    const excelRow = sheet.addRow(columns.map((column) => row[column.key]));
+    excelRow.eachCell((cell) => {
+      cell.border = { bottom: { style: 'thin', color: { argb: 'E5E7EB' } } };
+    });
+  });
 
   if (options?.currencyKeys) {
     columns.forEach((column, index) => {
@@ -169,6 +213,98 @@ export async function exportToPdf(
   headerMeta.appendChild(rowsChip);
   header.appendChild(headerMeta);
   container.appendChild(header);
+
+  if (options?.profile) {
+    const profileCard = document.createElement('div');
+    profileCard.style.display = 'flex';
+    profileCard.style.alignItems = 'center';
+    profileCard.style.justifyContent = 'space-between';
+    profileCard.style.gap = '18px';
+    profileCard.style.padding = '18px 20px';
+    profileCard.style.marginBottom = '18px';
+    profileCard.style.borderRadius = '18px';
+    profileCard.style.background = '#ffffff';
+    profileCard.style.border = '1px solid #e5e7eb';
+    profileCard.style.boxShadow = '0 10px 24px rgba(15, 23, 42, 0.08)';
+
+    const profileLeft = document.createElement('div');
+    profileLeft.style.display = 'flex';
+    profileLeft.style.alignItems = 'center';
+    profileLeft.style.gap = '16px';
+    profileLeft.style.minWidth = '0';
+
+    if (options.profile.imageUrl) {
+      const avatar = document.createElement('img');
+      avatar.src = options.profile.imageUrl;
+      avatar.crossOrigin = 'anonymous';
+      avatar.alt = options.profile.title;
+      avatar.style.width = '72px';
+      avatar.style.height = '72px';
+      avatar.style.objectFit = 'cover';
+      avatar.style.borderRadius = '18px';
+      avatar.style.border = `2px solid ${options.signatureColor || '#8b7cf6'}`;
+      avatar.style.background = '#f8fafc';
+      profileLeft.appendChild(avatar);
+    }
+
+    const profileCopy = document.createElement('div');
+    profileCopy.style.display = 'flex';
+    profileCopy.style.flexDirection = 'column';
+    profileCopy.style.gap = '6px';
+    profileCopy.style.minWidth = '0';
+
+    const profileTitle = document.createElement('div');
+    profileTitle.innerText = options.profile.title;
+    profileTitle.style.fontSize = '22px';
+    profileTitle.style.fontWeight = '800';
+    profileTitle.style.color = '#0f172a';
+    profileTitle.style.letterSpacing = '-0.01em';
+
+    const profileSubtitle = document.createElement('div');
+    profileSubtitle.innerText = options.profile.subtitle || '';
+    profileSubtitle.style.fontSize = '12px';
+    profileSubtitle.style.color = '#64748b';
+
+    profileCopy.appendChild(profileTitle);
+    if (options.profile.subtitle) profileCopy.appendChild(profileSubtitle);
+    profileLeft.appendChild(profileCopy);
+    profileCard.appendChild(profileLeft);
+
+    const detailsGrid = document.createElement('div');
+    detailsGrid.style.display = 'grid';
+    detailsGrid.style.gridTemplateColumns = 'repeat(2, minmax(130px, 1fr))';
+    detailsGrid.style.gap = '10px';
+    detailsGrid.style.minWidth = '420px';
+
+    (options.profile.details || []).slice(0, 6).forEach((detail) => {
+      const item = document.createElement('div');
+      item.style.padding = '9px 10px';
+      item.style.borderRadius = '12px';
+      item.style.background = '#f8fafc';
+      item.style.border = '1px solid #e5e7eb';
+
+      const label = document.createElement('div');
+      label.innerText = detail.label;
+      label.style.fontSize = '9px';
+      label.style.textTransform = 'uppercase';
+      label.style.letterSpacing = '0.1em';
+      label.style.color = '#64748b';
+      label.style.marginBottom = '4px';
+
+      const value = document.createElement('div');
+      value.innerText = safeText(detail.value);
+      value.style.fontSize = '12px';
+      value.style.fontWeight = '700';
+      value.style.color = '#0f172a';
+
+      item.appendChild(label);
+      item.appendChild(value);
+      detailsGrid.appendChild(item);
+    });
+
+    profileCard.appendChild(detailsGrid);
+    container.appendChild(profileCard);
+  }
 
   const summaryGrid = document.createElement('div');
   summaryGrid.style.display = 'grid';
@@ -307,7 +443,7 @@ export async function exportToPdf(
   container.appendChild(footer);
 
   document.body.appendChild(container);
-  const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#ffffff' });
+  const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
   const imgData = canvas.toDataURL('image/png');
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
   const imgProps = pdf.getImageProperties(imgData);

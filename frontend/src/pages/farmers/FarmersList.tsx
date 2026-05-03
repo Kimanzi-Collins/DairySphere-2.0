@@ -15,6 +15,7 @@ export default function FarmersList() {
     const [farmers, setFarmers] = useState<Farmer[]>([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const [formOpen, setFormOpen] = useState(false);
     const [editFarmer, setEditFarmer] = useState<Farmer | null>(null);
     const [uploadFarmer, setUploadFarmer] = useState<Farmer | null>(null);
@@ -26,9 +27,14 @@ export default function FarmersList() {
         try {
             const data = await farmersAPI.getAll() as Farmer[];
             setFarmers(data);
+            setError('');
             setLoading(false);
             setTimeout(() => ScrollTrigger.refresh(), 200);
-        } catch { setLoading(false); }
+        } catch (err) {
+            console.error('Failed to load farmers:', err);
+            setError(err instanceof Error ? err.message : 'Failed to load farmers');
+            setLoading(false);
+        }
     };
 
     const handleEditProfilePic = (farmer: Farmer) => {
@@ -53,9 +59,9 @@ export default function FarmersList() {
     };
 
     const filtered = farmers.filter(f =>
-        f.FarmerName.toLowerCase().includes(search.toLowerCase()) ||
-        f.FarmerId.toLowerCase().includes(search.toLowerCase()) ||
-        f.Location.toLowerCase().includes(search.toLowerCase())
+        String(f.FarmerName || '').toLowerCase().includes(search.toLowerCase()) ||
+        String(f.FarmerId || '').toLowerCase().includes(search.toLowerCase()) ||
+        String(f.Location || '').toLowerCase().includes(search.toLowerCase())
     );
 
     const grouped = filtered.reduce((acc, f) => {
@@ -121,6 +127,12 @@ export default function FarmersList() {
                 </button>
                 
             </div>
+
+            {error && (
+                <div style={S.errorBox}>
+                    {error}
+                </div>
+            )}
 
             {/* Grouped Cards */}
             {locations.map((loc) => (
@@ -253,5 +265,14 @@ const S: Record<string, React.CSSProperties> = {
         borderTopColor: 'var(--primary)',
         borderRadius: '50%',
         animation: 'spin 0.8s linear infinite',
+    },
+    errorBox: {
+        marginBottom: '20px',
+        background: 'rgba(239, 68, 68, 0.1)',
+        border: '1px solid rgba(239, 68, 68, 0.25)',
+        color: '#fca5a5',
+        borderRadius: '10px',
+        padding: '10px 14px',
+        fontSize: '13px',
     },
 };

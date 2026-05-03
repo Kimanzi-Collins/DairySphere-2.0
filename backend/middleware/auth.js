@@ -4,7 +4,9 @@ const authenticate = (req, res, next) => {
     try {
         // Get token from header
         const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+        const token = authHeader
+            ? (/^Bearer\s+/i.test(authHeader) ? authHeader.replace(/^Bearer\s+/i, '').trim() : authHeader.trim())
+            : null;
 
         if (!token) {
             return res.status(401).json({

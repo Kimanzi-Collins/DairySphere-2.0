@@ -147,12 +147,20 @@ const KEY_MAP: Record<string, string> = {
     LASTUPDATED: 'LastUpdated',
     LastUpdated: 'LastUpdated',
     ACTIVEMONTHS: 'ActiveMonths',
+    LIFETIMEDELIVERIES: 'LifetimeDeliveries',
+    LIFETIMECOMMISSION: 'LifetimeCommission',
     LIFETIMECOMMISSIONPAID: 'LifetimeCommission',
     LIFETIMEINPUTSPURCHASED: 'LifetimeInputsPurchased',
     LIFETIMELITRES: 'LifetimeLitres',
+    LIFETIMEDELIVERYAMOUNT: 'LifetimeDeliveryAmount',
     LIFETIMEMILKSALES: 'LifetimeDeliveryAmount',
     LIFETIMENETEARNINGS: 'LifetimeNetEarnings',
+    LIFETIMETOTALDEDUCTIONS: 'LifetimeTotalDeductions',
     LIFETIMELOANDEDUCTIONS: 'LifetimeLoanDeductions',
+    AVGMONTHLYNETPAYMENT: 'AvgMonthlyNetPayment',
+    FARMERLOCATION: 'FarmerLocation',
+    FARMERCONTACT: 'FarmerContact',
+    FARMEREMAIL: 'FarmerEmail',
     OUTSTANDINGLOANBALANCE: 'OutstandingBalance',
     TOTALAGENTS: 'TotalAgents',
     TOTALFACTORIES: 'TotalFactories',
@@ -165,6 +173,17 @@ const KEY_MAP: Record<string, string> = {
     TOTALNETEARNINGSALLTIME: 'TotalNetEarnings',
     TOTALLOANSISSUED: 'TotalDisbursed',
     TOTALOUTSTANDINGLOANS: 'TotalOutstanding',
+    TOTALLITRESDELIVERED: 'TotalLitres',
+    TOTALMILKREVENUE: 'TotalDeliveryRevenue',
+    TOTALCOMMISSIONPAID: 'TotalCommissionPaid',
+    TOTALLOANDEDUCTIONS: 'TotalLoanCollected',
+    TOTALINPUTSPURCHASED: 'TotalInputsSold',
+    TOTALNETEARNINGS: 'TotalNetEarnings',
+    FMT_MILKREVENUE: 'FMT_MilkRevenue',
+    FMT_COMMISSION: 'FMT_Commission',
+    FMT_LOANS: 'FMT_Loans',
+    FMT_INPUTS: 'FMT_Inputs',
+    FMT_NETEARNINGS: 'FMT_NetEarnings',
     ACTIVELOANS: 'ActiveLoans',
     COMPLETEDLOANS: 'CompletedLoans',
     DEFAULTEDLOANS: 'DefaultedLoans',
@@ -196,6 +215,7 @@ const NUMERIC_KEYS = new Set([
     'ActiveLoans', 'CompletedLoans', 'TotalLoans', 'FarmersInCredit',
     'FarmersInDeficit', 'TotalNetPayments', 'MonthlyDeduction', 'PercentRepaid',
     'RemainingBalance', 'RepaymentAmount', 'DeliveryAmount', 'CommissionDeduction', 'LoanDeduction', 'InputsDeduction', 'NetPayment', 'PrevMonthNet', 'MonthlyChange', 'FactoryIdNum',
+    'TotalLitresDelivered', 'TotalMilkRevenue', 'TotalCommissionPaid', 'TotalLoanDeductions', 'TotalInputsPurchased', 'TotalNetEarnings',
 ]);
 
 function parseNumberish(value: unknown): unknown {
@@ -280,6 +300,15 @@ function getAuthToken() {
     return localStorage.getItem('dairysphere_token');
 }
 
+function clearSessionAndRedirectToSignIn() {
+    localStorage.removeItem('dairysphere_token');
+    localStorage.removeItem('dairysphere_user');
+
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/signin')) {
+        window.location.assign('/signin');
+    }
+}
+
 async function requestJSON<T>(endpoint: string, options: RequestOptions = {}): Promise<ApiEnvelope<T>> {
     const headers: Record<string, string> = {};
 
@@ -308,7 +337,12 @@ async function requestJSON<T>(endpoint: string, options: RequestOptions = {}): P
     
 
     if (!res.ok) {
-        throw new Error(payload?.message || `API Error: ${res.status}`);
+        const status = res.status;
+        if (!options.skipAuth && (status === 401 || status === 403)) {
+            clearSessionAndRedirectToSignIn();
+        }
+
+        throw new Error(payload?.message || `API Error: ${status} on ${endpoint}`);
     }
 
     return normalizeApiData(payload) as ApiEnvelope<T>;
@@ -328,12 +362,30 @@ function unwrapItem<T>(payload: ApiEnvelope<T> | T): T {
 
 function monthKey(dateValue: string) {
     if (!dateValue) return 'Unknown';
-    return dateValue.slice(0, 7);
+    const value = String(dateValue).trim();
+    if (/^\d{4}-\d{2}/.test(value)) return value.slice(0, 7);
+
+    const dayMonthYear = value.match(/^\d{1,2}-([A-Za-z]{3})-(\d{4})/);
+    if (dayMonthYear) {
+        const month = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+            .indexOf(dayMonthYear[1].toLowerCase()) + 1;
+        if (month > 0) return `${dayMonthYear[2]}-${String(month).padStart(2, '0')}`;
+    }
+
+    const monthYear = value.match(/^([A-Za-z]{3,})\s+(\d{4})/);
+    if (monthYear) {
+        const month = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+            .indexOf(monthYear[1].slice(0, 3).toLowerCase()) + 1;
+        if (month > 0) return `${monthYear[2]}-${String(month).padStart(2, '0')}`;
+    }
+
+    return value.slice(0, 7);
 }
 
 function monthDisplay(dateValue: string) {
     if (!dateValue) return 'Unknown';
-    const date = new Date(dateValue);
+    const key = monthKey(dateValue);
+    const date = new Date(key === 'Unknown' ? dateValue : `${key}-01T00:00:00`);
     if (Number.isNaN(date.getTime())) return dateValue.slice(0, 7);
     return new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric' }).format(date);
 }
@@ -341,6 +393,146 @@ function monthDisplay(dateValue: string) {
 function safeNumber(value: unknown) {
     const num = Number(value ?? 0);
     return Number.isFinite(num) ? num : 0;
+}
+
+function normalizeFarmerRecord(raw: Record<string, unknown>) {
+    const farmerId = String(raw.FarmerId ?? raw.farmerId ?? '').trim();
+    return {
+        ...raw,
+        FarmerId: farmerId,
+        FarmerName: String(raw.FarmerName ?? raw.farmerName ?? 'Unknown Farmer').trim(),
+        Location: String(raw.Location ?? raw.FarmerLocation ?? raw.location ?? 'Unknown').trim(),
+        Contact: String(raw.Contact ?? raw.FarmerContact ?? raw.contact ?? '').trim(),
+        Email: (raw.Email ?? raw.FarmerEmail ?? raw.email ?? null) as string | null,
+        DateOfBirth: String(raw.DateOfBirth ?? raw.dateOfBirth ?? ''),
+        EnrolmentDate: String(raw.EnrolmentDate ?? raw.enrolmentDate ?? ''),
+        ProfilePicUrl: (raw.ProfilePicUrl ?? raw.profilePicUrl ?? null) as string | null,
+        Gender: String(raw.Gender ?? raw.gender ?? 'Unknown'),
+        Age: safeNumber(raw.Age ?? raw.age ?? 0),
+        CreatedAt: String(raw.CreatedAt ?? raw.createdAt ?? ''),
+    };
+}
+
+function emptyMonthlyRow(key: string, display: string) {
+    return {
+        SummaryMonth: key,
+        MonthDisplay: display,
+        TotalLitres: 0,
+        DeliveryCount: 0,
+        DeliveryAmount: 0,
+        CommissionDeduction: 0,
+        LoanDeduction: 0,
+        InputsDeduction: 0,
+        TotalDeductions: 0,
+        NetPayment: 0,
+        PaymentStatus: 'Zero',
+    };
+}
+
+function getMonthlyBucket(map: Map<string, ReturnType<typeof emptyMonthlyRow>>, dateValue: unknown) {
+    const key = monthKey(String(dateValue || ''));
+    const display = monthDisplay(String(dateValue || ''));
+    const existing = map.get(key);
+    if (existing) return existing;
+
+    const row = emptyMonthlyRow(key, display);
+    map.set(key, row);
+    return row;
+}
+
+async function buildMonthlyStatementsFromTransactions(farmerId: string) {
+    const [deliveriesResult, salesResult, purchasesResult, repaymentsResult] = await Promise.allSettled([
+        deliveriesAPI.getByFarmer(farmerId),
+        salesAPI.getByFarmer(farmerId),
+        inputPurchasesAPI.getByFarmer(farmerId),
+        loanRepaymentsAPI.getAll({ farmerId, status: 'Paid' }),
+    ]);
+
+    const deliveries = deliveriesResult.status === 'fulfilled' ? deliveriesResult.value as any[] : [];
+    const sales = salesResult.status === 'fulfilled' ? salesResult.value as any[] : [];
+    const purchases = purchasesResult.status === 'fulfilled' ? purchasesResult.value as any[] : [];
+    const repayments = repaymentsResult.status === 'fulfilled' ? repaymentsResult.value as any[] : [];
+
+    const monthly = new Map<string, ReturnType<typeof emptyMonthlyRow>>();
+
+    deliveries.forEach((delivery) => {
+        const row = getMonthlyBucket(monthly, delivery.DeliveryDate);
+        row.TotalLitres += safeNumber(delivery.MilkQuantity ?? delivery.Litres);
+        row.DeliveryCount += 1;
+        row.DeliveryAmount += safeNumber(delivery.Amount ?? delivery.DeliveryAmount ?? delivery.TotalAmount);
+    });
+
+    sales.forEach((sale) => {
+        const row = getMonthlyBucket(monthly, sale.SaleDate);
+        row.CommissionDeduction += safeNumber(sale.Commission);
+    });
+
+    purchases.forEach((purchase) => {
+        const row = getMonthlyBucket(monthly, purchase.DateOfPurchase ?? purchase.PurchaseDate);
+        row.InputsDeduction += safeNumber(purchase.PurchaseAmount ?? purchase.TotalCost);
+    });
+
+    repayments.forEach((repayment) => {
+        const row = getMonthlyBucket(monthly, repayment.RepaymentMonth ?? repayment.PaidDate ?? repayment.ScheduledDate);
+        row.LoanDeduction += safeNumber(repayment.RepaymentAmount);
+    });
+
+    return Array.from(monthly.values()).map((row) => {
+        row.TotalDeductions = row.CommissionDeduction + row.LoanDeduction + row.InputsDeduction;
+        row.NetPayment = row.DeliveryAmount - row.TotalDeductions;
+        row.PaymentStatus = row.NetPayment > 0 ? 'Credit' : row.NetPayment < 0 ? 'Deficit' : 'Zero';
+        return row;
+    }).sort((a, b) => b.SummaryMonth.localeCompare(a.SummaryMonth));
+}
+
+function buildSummaryFromProfileAndMonthly(profile: Record<string, unknown>, monthly: any[]) {
+    const netPayments = monthly.map((row) => safeNumber(row.NetPayment));
+    const totalNet = netPayments.reduce((acc, value) => acc + value, 0);
+    return {
+        FarmerId: profile.FarmerId,
+        FarmerName: profile.FarmerName,
+        FarmerLocation: profile.Location,
+        FarmerContact: profile.Contact,
+        FarmerEmail: profile.Email,
+        ProfilePicUrl: profile.ProfilePicUrl,
+        Age: safeNumber(profile.Age),
+        Gender: profile.Gender,
+        EnrolmentDate: profile.EnrolmentDate,
+        ActiveMonths: monthly.length,
+        LifetimeDeliveries: monthly.reduce((acc, row) => acc + safeNumber(row.DeliveryCount), 0),
+        LifetimeLitres: monthly.reduce((acc, row) => acc + safeNumber(row.TotalLitres), 0),
+        LifetimeDeliveryAmount: monthly.reduce((acc, row) => acc + safeNumber(row.DeliveryAmount), 0),
+        LifetimeCommission: monthly.reduce((acc, row) => acc + safeNumber(row.CommissionDeduction), 0),
+        LifetimeLoanDeductions: monthly.reduce((acc, row) => acc + safeNumber(row.LoanDeduction), 0),
+        LifetimeInputsPurchased: monthly.reduce((acc, row) => acc + safeNumber(row.InputsDeduction), 0),
+        LifetimeTotalDeductions: monthly.reduce((acc, row) => acc + safeNumber(row.TotalDeductions), 0),
+        LifetimeNetEarnings: totalNet,
+        AvgMonthlyNetPayment: monthly.length ? totalNet / monthly.length : 0,
+        BestMonthEarning: monthly.length ? Math.max(...netPayments) : 0,
+        WorstMonthEarning: monthly.length ? Math.min(...netPayments) : 0,
+        MonthsInCredit: netPayments.filter((value) => value > 0).length,
+        MonthsInDeficit: netPayments.filter((value) => value < 0).length,
+    };
+}
+
+async function getFarmerStatementData(farmerId: string) {
+    const profile = await farmersAPI.getOne(farmerId) as Record<string, unknown>;
+
+    let monthlyStatements: any[] = [];
+    try {
+        monthlyStatements = await farmersAPI.getMonthlyEarnings(farmerId) as any[];
+    } catch {
+        monthlyStatements = await buildMonthlyStatementsFromTransactions(farmerId);
+    }
+
+    let summary: Record<string, unknown>;
+    try {
+        summary = await farmersAPI.getSummary(farmerId) as Record<string, unknown>;
+    } catch {
+        summary = buildSummaryFromProfileAndMonthly(profile, monthlyStatements);
+    }
+
+    return { profile, summary, monthlyStatements };
 }
 
 function groupBy<T>(items: T[], keyFn: (item: T) => string) {
@@ -373,15 +565,28 @@ export const authAPI = {
 };
 
 export const farmersAPI = {
-    getAll: async () => unwrapList(await requestJSON('/farmers')),
-    getOne: async (id: string) => unwrapItem(await requestJSON(`/farmers/${id}`)),
+    getAll: async () => {
+        const list = unwrapList(await requestJSON('/farmers')) as Array<Record<string, unknown>>;
+        return list.map(normalizeFarmerRecord);
+    },
+    getOne: async (id: string) => {
+        const item = unwrapItem(await requestJSON(`/farmers/${id}`)) as Record<string, unknown>;
+        return normalizeFarmerRecord(item);
+    },
     getSummary: async (id: string) => unwrapItem(await requestJSON(`/farmers/${id}/summary`)),
     getMonthlyEarnings: async (id: string) => unwrapList(await requestJSON(`/farmers/${id}/monthly-earnings`)),
     getTransactions: async (id: string) => unwrapList(await requestJSON(`/farmers/${id}/transactions`)),
-    create: async (data: Record<string, unknown>) => unwrapItem(await requestJSON('/farmers', {
-        method: 'POST',
-        body: JSON.stringify(data),
-    })),
+    create: async (data: Record<string, unknown>) => {
+        const created = unwrapItem(await requestJSON('/farmers', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        })) as Record<string, unknown>;
+        // Backend returns farmerId in lower camel case; normalize to FarmerId for callers.
+        return {
+            ...created,
+            FarmerId: String(created.FarmerId ?? created.farmerId ?? ''),
+        };
+    },
     update: async (id: string, data: Record<string, unknown>) => unwrapItem(await requestJSON(`/farmers/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
@@ -558,14 +763,14 @@ function aggregateMonthly<T>(items: T[], getDate: (item: T) => string, reducer: 
 
 async function buildStatementSeries() {
     const farmers = await farmersAPI.getAll() as Array<{ FarmerId: string }>;
-    const results = await Promise.all(farmers.map(async (farmer) => {
-        const [profile, summary, monthly] = await Promise.all([
-            farmersAPI.getOne(farmer.FarmerId),
-            farmersAPI.getSummary(farmer.FarmerId),
-            farmersAPI.getMonthlyEarnings(farmer.FarmerId),
-        ]);
-        return { profile: profile as any, summary: summary as any, monthly: monthly as any[] };
+    const settled = await Promise.allSettled(farmers.map(async (farmer) => {
+        const { profile, summary, monthlyStatements } = await getFarmerStatementData(farmer.FarmerId);
+        return { profile: profile as any, summary: summary as any, monthly: monthlyStatements as any[] };
     }));
+
+    const results = settled
+        .filter((item): item is PromiseFulfilledResult<{ profile: any; summary: any; monthly: any[] }> => item.status === 'fulfilled')
+        .map((item) => item.value);
 
     const statements = results.flatMap(({ profile, monthly }) => monthly.map((row: any) => ({
         FarmerId: profile.FarmerId,
@@ -703,26 +908,27 @@ export const reportsAPI = {
 
     statements: async () => (await buildStatementSeries()).statements,
     statementFarmer: async (id: string) => {
-        const profile = await farmersAPI.getOne(id) as Record<string, unknown>;
-        const summary = await farmersAPI.getSummary(id) as Record<string, unknown>;
-        const monthly = await farmersAPI.getMonthlyEarnings(id) as any[];
+        const { profile, summary, monthlyStatements } = await getFarmerStatementData(id);
         return {
             profile: {
                 ...profile,
                 ...summary,
             },
-            monthlyStatements: monthly,
+            monthlyStatements,
         };
     },
     statementLifetime: async () => {
         const farmers = await farmersAPI.getAll() as Array<{ FarmerId: string }>;
-        const results = await Promise.all(farmers.map(async (farmer) => farmersAPI.getSummary(farmer.FarmerId)));
-        return results;
+        const results = await Promise.allSettled(farmers.map(async (farmer) => {
+            const { summary } = await getFarmerStatementData(farmer.FarmerId);
+            return summary;
+        }));
+        return results
+            .filter((item): item is PromiseFulfilledResult<Record<string, unknown>> => item.status === 'fulfilled')
+            .map((item) => item.value);
     },
     statementProfile: async (id: string) => {
-        const profile = await farmersAPI.getOne(id) as Record<string, unknown>;
-        const summary = await farmersAPI.getSummary(id) as Record<string, unknown>;
-        const monthlyStatements = await farmersAPI.getMonthlyEarnings(id) as any[];
+        const { profile, summary, monthlyStatements } = await getFarmerStatementData(id);
         
         // Calculate performance analytics from monthly data (track NetPayment, not just delivery)
         let bestMonthEarning = monthlyStatements.length > 0 ? safeNumber(monthlyStatements[0].NetPayment ?? 0) : 0;

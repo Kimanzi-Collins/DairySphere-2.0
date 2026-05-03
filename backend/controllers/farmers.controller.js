@@ -102,11 +102,11 @@ const getFarmerSummary = async (req, res) => {
                 FROM (
                     SELECT TO_CHAR(DeliveryDate, 'YYYY-MM') as SummaryMonth, Amount as Revenue, 0 as Commission, 0 as Loans, 0 as Purchases FROM Deliveries WHERE FarmerId = :id
                     UNION ALL
-                    SELECT TO_CHAR(SaleDate, 'YYYY-MM'), 0, 0, Commission, 0, 0 FROM Sales WHERE FarmerId = :id
+                    SELECT TO_CHAR(SaleDate, 'YYYY-MM'), 0, Commission, 0, 0 FROM Sales WHERE FarmerId = :id
                     UNION ALL
-                    SELECT RepaymentMonth, 0, 0, 0, RepaymentAmount, 0 FROM LoanRepayments WHERE FarmerId = :id AND RepaymentStatus = 'Paid'
+                    SELECT RepaymentMonth, 0, 0, RepaymentAmount, 0 FROM LoanRepayments WHERE FarmerId = :id AND RepaymentStatus = 'Paid'
                     UNION ALL
-                    SELECT TO_CHAR(DateOfPurchase, 'YYYY-MM'), 0, 0, 0, 0, PurchaseAmount FROM InputPurchases WHERE FarmerId = :id
+                    SELECT TO_CHAR(DateOfPurchase, 'YYYY-MM'), 0, 0, 0, PurchaseAmount FROM InputPurchases WHERE FarmerId = :id
                 )
                 GROUP BY SummaryMonth
             )
@@ -207,7 +207,7 @@ const getFarmerMonthlyEarnings = async (req, res) => {
                 UNION ALL
                 SELECT RepaymentMonth, 0, 0, 0, RepaymentAmount, 0 FROM LoanRepayments WHERE FarmerId = :id AND RepaymentStatus = 'Paid'
                 UNION ALL
-                SELECT TO_CHAR(DateOfPurchase, 'YYYY-MM'), 0, 0, 0, 0, PurchaseAmount FROM InputPurchased WHERE FarmerId = :id
+                SELECT TO_CHAR(DateOfPurchase, 'YYYY-MM'), 0, 0, 0, 0, PurchaseAmount FROM InputPurchases WHERE FarmerId = :id
             )
             GROUP BY SummaryMonth
             ORDER BY SummaryMonth DESC`,

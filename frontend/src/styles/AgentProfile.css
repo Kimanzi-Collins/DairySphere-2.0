@@ -47,6 +47,13 @@
   background: var(--glass-bg-card); border: 1px solid var(--glass-border);
   border-radius: 16px; padding: 20px 28px;
 }
+.profile-export-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
 .earnings-label { font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
 .earnings-value { font-size: 1.5rem; font-weight: 800; color: var(--text-normal); }
 .earnings-value.positive { color: #10b981; }
@@ -121,6 +128,7 @@ td.positive { color: #10b981; font-weight: 600; }
 }
 @media (max-width: 768px) {
   .agent-profile-card { flex-direction: column; align-items: flex-start; gap: 20px; }
+  .profile-export-panel { align-items: flex-start; width: 100%; }
   .agent-profile-earnings-box { align-items: flex-start; }
   .agent-profile-stats { grid-template-columns: 1fr; }
 }

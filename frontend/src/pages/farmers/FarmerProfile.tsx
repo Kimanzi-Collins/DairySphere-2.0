@@ -13,6 +13,7 @@ import {
 import { reportsAPI, BASE_URL } from '../../api';
 import GlassCard from '../../components/common/GlassCard';
 import StatusBadge from '../../components/common/StatusBadge';
+import ExportButtons from '../../components/common/ExportButtons';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -187,6 +188,31 @@ export default function FarmerProfile() {
         net: m.NetPayment,
     }));
 
+    const statementRows = monthly.map((m) => ({
+        MonthDisplay: m.MonthDisplay,
+        DeliveryAmount: m.DeliveryAmount,
+        CommissionDeduction: m.CommissionDeduction,
+        LoanDeduction: m.LoanDeduction,
+        InputsDeduction: m.InputsDeduction,
+        TotalDeductions: m.TotalDeductions,
+        NetPayment: m.NetPayment,
+        PaymentStatus: m.PaymentStatus,
+    }));
+
+    const exportProfile = {
+        imageUrl: pic,
+        title: profile.FarmerName,
+        subtitle: `Farmer statement for ${profile.FarmerId}`,
+        details: [
+            { label: 'Farmer ID', value: profile.FarmerId },
+            { label: 'Location', value: profile.FarmerLocation },
+            { label: 'Contact', value: profile.FarmerContact },
+            { label: 'Email', value: profile.FarmerEmail || 'N/A' },
+            { label: 'Joined', value: profile.EnrolmentDate },
+            { label: 'Net Earnings', value: formatCurrency(profile.LifetimeNetEarnings) },
+        ],
+    };
+
     return (
         <div ref={pageRef}>
             {/* Back */}
@@ -259,6 +285,7 @@ export default function FarmerProfile() {
                         </div>
                     </div>
 
+                    <div style={S.headerActions}>
                     {/* Lifetime Earnings Badge */}
                     <div style={S.earningsBox}>
                         <div style={S.earningsLabel}>LIFETIME EARNINGS</div>
@@ -271,6 +298,24 @@ export default function FarmerProfile() {
                         <div style={S.earningsSub}>
                             {profile.ActiveMonths} months active • {profile.LifetimeDeliveries} deliveries
                         </div>
+                    </div>
+                    <ExportButtons
+                        className="profile-export-actions"
+                        filename={`${profile.FarmerId}-${profile.FarmerName}-statement`}
+                        signatureColor="#8b7cf6"
+                        profile={exportProfile}
+                        columns={[
+                            { header: 'Month', key: 'MonthDisplay', width: 16 },
+                            { header: 'Deliveries', key: 'DeliveryAmount', isCurrency: true, width: 16 },
+                            { header: 'Commission', key: 'CommissionDeduction', isCurrency: true, width: 16 },
+                            { header: 'Loan', key: 'LoanDeduction', isCurrency: true, width: 16 },
+                            { header: 'Inputs', key: 'InputsDeduction', isCurrency: true, width: 16 },
+                            { header: 'Deductions', key: 'TotalDeductions', isCurrency: true, width: 16 },
+                            { header: 'Net Payment', key: 'NetPayment', isCurrency: true, width: 16 },
+                            { header: 'Status', key: 'PaymentStatus', width: 14 },
+                        ]}
+                        rows={statementRows}
+                    />
                     </div>
                 </div>
             </div>
@@ -499,5 +544,12 @@ const S: Record<string, React.CSSProperties> = {
     earningsSub: {
         fontSize: '11px',
         color: 'var(--text-faint)',
+    },
+    headerActions: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-end',
+        gap: '12px',
+        flexShrink: 0,
     },
 };

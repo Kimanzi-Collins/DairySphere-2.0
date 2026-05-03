@@ -4,6 +4,7 @@ import { gsap } from 'gsap';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Wallet, DollarSign, TrendingUp } from 'lucide-react';
 import StatCard from '../components/common/StatCard';
+import ExportButtons from '../components/common/ExportButtons';
 import { getEntityProfilePic } from '../utils/entityProfilePics';
 import { agentsAPI, salesAPI } from '../api';
 import '../styles/AgentProfile.css';
@@ -77,6 +78,25 @@ const AgentProfile = () => {
   const totalCommission = sales.reduce((sum, s) => sum + Number(s.Commission || s.CommissionAmount || 0), 0);
   const avgCommission = totalSalesCount > 0 ? totalCommission / totalSalesCount : 0;
   const agentProfilePic = agent?.AgentId ? getEntityProfilePic('agents', agent.AgentId) : null;
+  const exportRows = monthlyData.map((m) => ({
+    month: m.month,
+    salesCount: m.salesCount,
+    totalAmount: m.totalAmount,
+    commission: m.commission,
+  }));
+  const exportProfile = agent ? {
+    imageUrl: agentProfilePic || undefined,
+    title: agent.AgentName,
+    subtitle: `Agent statement for ${agent.AgentId}`,
+    details: [
+      { label: 'Agent ID', value: agent.AgentId },
+      { label: 'Location', value: getField(agent, 'Location') || 'N/A' },
+      { label: 'Contact', value: getField(agent, 'Contact', 'Phone') || 'N/A' },
+      { label: 'Email', value: getField(agent, 'Email') || 'N/A' },
+      { label: 'Total Sales', value: totalSalesCount },
+      { label: 'Commission', value: formatCurrency(totalCommission) },
+    ],
+  } : undefined;
 
   const customTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload) return null;
@@ -120,12 +140,27 @@ const AgentProfile = () => {
             </div>
           </div>
         </div>
-        <div className="agent-profile-earnings-box">
-          <span className="earnings-label">TOTAL COMMISSION</span>
-          <span className={`earnings-value ${totalCommission > 0 ? 'positive' : ''}`}>
-            {formatCurrency(totalCommission)}
-          </span>
-          <span className="earnings-sub">{totalSalesCount} total sales</span>
+        <div className="profile-export-panel">
+          <div className="agent-profile-earnings-box">
+            <span className="earnings-label">TOTAL COMMISSION</span>
+            <span className={`earnings-value ${totalCommission > 0 ? 'positive' : ''}`}>
+              {formatCurrency(totalCommission)}
+            </span>
+            <span className="earnings-sub">{totalSalesCount} total sales</span>
+          </div>
+          <ExportButtons
+            className="profile-export-actions"
+            filename={`${agent.AgentId}-${agent.AgentName}-statement`}
+            signatureColor="#10b981"
+            profile={exportProfile}
+            columns={[
+              { header: 'Month', key: 'month', width: 16 },
+              { header: 'Sales', key: 'salesCount', width: 12 },
+              { header: 'Amount', key: 'totalAmount', isCurrency: true, width: 18 },
+              { header: 'Commission', key: 'commission', isCurrency: true, width: 18 },
+            ]}
+            rows={exportRows}
+          />
         </div>
       </div>
 
