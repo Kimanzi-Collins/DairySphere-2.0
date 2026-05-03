@@ -1,6 +1,7 @@
 const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+export const BASE_URL = RAW_API_BASE.replace(/\/api\/?$/, '').replace(/\/$/, '');
 const API_BASE = RAW_API_BASE.replace(/\/$/, '');
-
+ 
 type ApiEnvelope<T> = {
     success?: boolean;
     message?: string;
@@ -61,9 +62,14 @@ const KEY_MAP: Record<string, string> = {
     TOTALREPAYABLE: 'TotalRepayable',
 
     REPAYMENTID: 'RepaymentId',
+    REPAYMENTMONTH: 'RepaymentMonth',
+    SCHEDULEDDATE: 'ScheduledDate',
+    PAIDDATE: 'PaidDate',
+    REMAININGBALANCE: 'RemainingBalance',
     REPAYMENTDATE: 'RepaymentDate',
     REPAYMENTAMOUNT: 'RepaymentAmount',
     REPAYMENTSTATUS: 'RepaymentStatus',
+    NOTES: 'Notes',
 
     DELIVERYID: 'DeliveryId',
     BATCHREF: 'BatchRef',
@@ -115,18 +121,73 @@ const KEY_MAP: Record<string, string> = {
     MonthlyDeduction: 'MonthlyDeduction',
     PERCENTREPAID: 'PercentRepaid',
     PercentRepaid: 'PercentRepaid',
+    SUMMARYID: 'SummaryId',
+    MILKSALESAMOUNT: 'DeliveryAmount',
+    MilkSalesAmount: 'DeliveryAmount',
+    DELIVERYAMOUNT: 'DeliveryAmount',
+    DeliveryAmount: 'DeliveryAmount',
+    AGENTCOMMISSION: 'CommissionDeduction',
+    AgentCommission: 'CommissionDeduction',
+    LOANDEDUCTIONS: 'LoanDeduction',
+    LoanDeductions: 'LoanDeduction',
+    LOAN_DEDUCTIONS: 'LoanDeduction',
+    LoanDeductionsAmount: 'LoanDeduction',
+    INPUTSPURCHASED: 'InputsDeduction',
+    InputsPurchased: 'InputsDeduction',
+    INPUTS_PURCHASED: 'InputsDeduction',
+    InputsDeduction: 'InputsDeduction',
+    NETEARNINGS: 'NetPayment',
+    NetEarnings: 'NetPayment',
+    NET_PAYMENT: 'NetPayment',
+    TOTAL_DEDUCTIONS: 'TotalDeductions',
+    PREVMONTHNET: 'PrevMonthNet',
+    PrevMonthNet: 'PrevMonthNet',
+    MONTHLYCHANGE: 'MonthlyChange',
+    MonthlyChange: 'MonthlyChange',
+    LASTUPDATED: 'LastUpdated',
+    LastUpdated: 'LastUpdated',
+    ACTIVEMONTHS: 'ActiveMonths',
+    LIFETIMECOMMISSIONPAID: 'LifetimeCommission',
+    LIFETIMEINPUTSPURCHASED: 'LifetimeInputsPurchased',
+    LIFETIMELITRES: 'LifetimeLitres',
+    LIFETIMEMILKSALES: 'LifetimeDeliveryAmount',
+    LIFETIMENETEARNINGS: 'LifetimeNetEarnings',
+    LIFETIMELOANDEDUCTIONS: 'LifetimeLoanDeductions',
+    OUTSTANDINGLOANBALANCE: 'OutstandingBalance',
+    TOTALAGENTS: 'TotalAgents',
+    TOTALFACTORIES: 'TotalFactories',
+    TOTALINPUTTYPES: 'TotalInputTypes',
+    TOTALLITRESALLTIME: 'TotalLitres',
+    TOTALMILKREVENUEALLTIME: 'TotalDeliveryRevenue',
+    TOTALCOMMISSIONALLTIME: 'TotalCommissionPaid',
+    TOTALLOANDEDUCTIONSALLTIME: 'TotalLoanCollected',
+    TOTALINPUTSALLTIME: 'TotalInputsSold',
+    TOTALNETEARNINGSALLTIME: 'TotalNetEarnings',
+    TOTALLOANSISSUED: 'TotalDisbursed',
+    TOTALOUTSTANDINGLOANS: 'TotalOutstanding',
+    ACTIVELOANS: 'ActiveLoans',
+    COMPLETEDLOANS: 'CompletedLoans',
+    DEFAULTEDLOANS: 'DefaultedLoans',
+    FACTORYIDNUM: 'FactoryIdNum',
+    BESTMONTHEARNING: 'BestMonthEarning',
+    WORSTMONTHEARNING: 'WorstMonthEarning',
+    MONTHSINCREDIT: 'MonthsInCredit',
+    MONTHSINDEFICIT: 'MonthsInDeficit',
+    AVGMONTHLYPAYMENT: 'AvgMonthlyPayment',
 };
 
 const NUMERIC_KEYS = new Set([
     'Age', 'MilkRank', 'RepaymentPeriod', 'TxnYear', 'TxnMonthNum',
     'TotalSales', 'TotalFarmers', 'TotalDeliveries', 'DeliveryCount',
     'ActiveMonths', 'MonthsInCredit', 'MonthsInDeficit',
+    'TotalFarmers', 'TotalAgents', 'TotalFactories', 'TotalInputTypes', 'TotalLitres',
     'LoanAmount', 'RepaymentAmount', 'SaleAmount', 'Commission',
     'InputPrice', 'Quantity', 'PurchaseAmount', 'Amount', 'RatePerLitre',
     'PricePerLitre', 'MilkQuantity', 'TotalLitres', 'TotalEarnings',
     'TotalRevenue', 'TotalOutstanding', 'OutstandingBalance', 'TotalRepayable',
     'TotalRepaid', 'TotalPrincipal', 'DeliveryAmount', 'LoanDeduction',
     'InputsDeduction', 'CommissionDeduction', 'TotalDeductions', 'NetPayment',
+    'TotalDeliveryRevenue', 'TotalCommissionPaid', 'TotalLoanCollected', 'TotalInputsSold', 'TotalNetEarnings', 'TotalDisbursed', 'TotalOutstanding',
     'AvgAge', 'AvgMonthlyPayment', 'AvgMonthlyNetPayment', 'BestMonthEarning',
     'WorstMonthEarning', 'LifetimeDeliveries', 'LifetimeLitres',
     'LifetimeDeliveryAmount', 'LifetimeCommission', 'LifetimeLoanDeductions',
@@ -134,6 +195,7 @@ const NUMERIC_KEYS = new Set([
     'TotalSaleAmount', 'TotalCommission', 'TotalDisbursed', 'TotalTransactions',
     'ActiveLoans', 'CompletedLoans', 'TotalLoans', 'FarmersInCredit',
     'FarmersInDeficit', 'TotalNetPayments', 'MonthlyDeduction', 'PercentRepaid',
+    'RemainingBalance', 'RepaymentAmount', 'DeliveryAmount', 'CommissionDeduction', 'LoanDeduction', 'InputsDeduction', 'NetPayment', 'PrevMonthNet', 'MonthlyChange', 'FactoryIdNum',
 ]);
 
 function parseNumberish(value: unknown): unknown {
@@ -148,21 +210,45 @@ function parseNumberish(value: unknown): unknown {
     const trimmed = value.trim();
     if (!trimmed) return 0;
 
-    // Handles values like "Ksh. 38,000.00" and "1,234" while keeping ids untouched via key filter.
-    const cleaned = trimmed.replace(/[^0-9.-]/g, '');
-    if (!cleaned || cleaned === '-' || cleaned === '.' || cleaned === '-.') {
-        return 0;
-    }
-
-    const parsed = Number(cleaned);
+    // Extract numeric portion starting from first digit (handles currency prefixes like "Ksh.")
+    const m = trimmed.match(/[0-9][0-9,\.\s-]*/);
+    if (!m || !m[0]) return 0;
+    // Remove thousands separators and spaces, keep decimal dot
+    const digitsOnly = m[0].replace(/[,\s]/g, '');
+    if (!digitsOnly) return 0;
+    const parsed = Number(digitsOnly);
     const result = Number.isFinite(parsed) ? parsed : 0;
-    
-    // DEBUG: Log currency parsing
-    if (trimmed.includes('Ksh')) {
-        console.log('🔧 [parseNumberish]', trimmed, '→', result);
-    }
-    
+
     return result;
+}
+
+function normalizeMonthlyStatementRow(row: Record<string, unknown>) {
+    const deliveryAmount = safeNumber(row.DeliveryAmount ?? row.MilkSalesAmount ?? row.MILKSALESAMOUNT ?? 0);
+    
+    // Ensure all deduction types are extracted and fallback to 0
+    const commissionDeduction = safeNumber(row.CommissionDeduction ?? row.AgentCommission ?? row.AGENTCOMMISSION ?? row.Commission ?? row.COMMISSION ?? 0);
+    const loanDeduction = safeNumber(row.LoanDeduction ?? row.LoanDeductions ?? row.LOANDEDUCTIONS ?? row.LoanDeductionsAmount ?? 0);
+    const inputsDeduction = safeNumber(row.InputsDeduction ?? row.InputsPurchased ?? row.INPUTSPURCHASED ?? 0);
+    
+    // Calculate total deductions from parts, as a fallback
+    const calculatedTotal = commissionDeduction + loanDeduction + inputsDeduction;
+    const totalDeductions = safeNumber(row.TotalDeductions ?? (calculatedTotal > 0 ? calculatedTotal : 0));
+    
+    const netPayment = safeNumber(row.NetPayment ?? row.NetEarnings ?? row.NETEARNINGS ?? 0);
+
+    return {
+        ...row,
+        MonthDisplay: row.MonthDisplay ?? row.SummaryMonth ?? row.SUMMARYMONTH ?? '',
+        DeliveryAmount: deliveryAmount,
+        CommissionDeduction: commissionDeduction,
+        LoanDeduction: loanDeduction,
+        InputsDeduction: inputsDeduction,
+        TotalDeductions: totalDeductions,
+        NetPayment: netPayment,
+        TotalLitres: safeNumber(row.TotalLitres ?? row.Totallitres ?? row.TOTALLITRES ?? 0),
+        DeliveryCount: safeNumber(row.DeliveryCount ?? 1),
+        PaymentStatus: row.PaymentStatus ?? (netPayment >= 0 ? 'Credit' : 'Deficit'),
+    };
 }
 
 function normalizeApiData<T>(value: T): T {
@@ -180,12 +266,9 @@ function normalizeApiData<T>(value: T): T {
                 ? parseNumberish(normalizedItem)
                 : normalizedItem;
         });
-        // DEBUG: Log if we're normalizing a delivery-like object
-        if (record.DELIVERYID || record.DeliveryId) {
-            console.log('🔧 [normalizeApiData] Normalized delivery:', {
-                input: { RATEPERLITRE: record.RATEPERLITRE, TOTALAMOUNT: record.TOTALAMOUNT },
-                output: { RatePerLitre: normalized['RatePerLitre'], Amount: normalized['Amount'] }
-            });
+        // Always normalize monthly statement rows if they have delivery or net payment data
+        if (normalized.DeliveryAmount !== undefined || normalized.NetPayment !== undefined) {
+            return normalizeMonthlyStatementRow(normalized as Record<string, unknown>) as T;
         }
         return normalized as T;
     }
@@ -221,6 +304,8 @@ async function requestJSON<T>(endpoint: string, options: RequestOptions = {}): P
     }
 
     const payload = await res.json().catch(() => ({}));
+
+    
 
     if (!res.ok) {
         throw new Error(payload?.message || `API Error: ${res.status}`);
@@ -487,11 +572,11 @@ async function buildStatementSeries() {
         FarmerName: profile.FarmerName,
         FarmerLocation: profile.Location,
         ProfilePicUrl: profile.ProfilePicUrl,
-        MonthDisplay: row.SummaryMonth || row.MonthDisplay || row.SummaryMonth,
-        DeliveryAmount: safeNumber(row.MilkSalesAmount || row.DeliveryAmount),
-        TotalDeductions: safeNumber(row.LoanDeductions || row.TotalDeductions) + safeNumber(row.InputsPurchased || row.InputsDeduction) + safeNumber(row.AgentCommission || row.CommissionDeduction),
-        NetPayment: safeNumber(row.NetEarnings || row.NetPayment),
-        PaymentStatus: row.PaymentStatus || (safeNumber(row.NetEarnings || row.NetPayment) >= 0 ? 'Credit' : 'Deficit'),
+        MonthDisplay: row.MonthDisplay || row.SummaryMonth || '',
+        DeliveryAmount: safeNumber(row.DeliveryAmount ?? 0),
+        TotalDeductions: safeNumber(row.TotalDeductions ?? 0),
+        NetPayment: safeNumber(row.NetPayment ?? 0),
+        PaymentStatus: row.PaymentStatus || 'Unknown',
     })));
 
     return { farmers, results, statements };
@@ -638,25 +723,86 @@ export const reportsAPI = {
         const profile = await farmersAPI.getOne(id) as Record<string, unknown>;
         const summary = await farmersAPI.getSummary(id) as Record<string, unknown>;
         const monthlyStatements = await farmersAPI.getMonthlyEarnings(id) as any[];
+        
+        // Calculate performance analytics from monthly data (track NetPayment, not just delivery)
+        let bestMonthEarning = monthlyStatements.length > 0 ? safeNumber(monthlyStatements[0].NetPayment ?? 0) : 0;
+        let worstMonthEarning = bestMonthEarning;
+        let totalNetPayment = 0;
+        let monthsInCredit = 0;
+        let monthsInDeficit = 0;
+        
+        monthlyStatements.forEach((m: any) => {
+            const net = safeNumber(m.NetPayment ?? 0);
+            
+            totalNetPayment += net;
+            bestMonthEarning = Math.max(bestMonthEarning, net);
+            worstMonthEarning = Math.min(worstMonthEarning, net);
+            
+            if (net >= 0) monthsInCredit++;
+            else monthsInDeficit++;
+        });
+        
+        const avgMonthlyNetPayment = monthlyStatements.length > 0 ? totalNetPayment / monthlyStatements.length : 0;
+        
         return {
             profile: {
                 ...profile,
                 ...summary,
                 FarmerLocation: profile.Location,
                 FarmerContact: profile.Contact,
+                BestMonthEarning: bestMonthEarning,
+                WorstMonthEarning: worstMonthEarning,
+                AvgMonthlyNetPayment: avgMonthlyNetPayment,
+                MonthsInCredit: monthsInCredit,
+                MonthsInDeficit: monthsInDeficit,
             },
             monthlyStatements,
         };
     },
     statementTrends: async () => {
         const series = await buildStatementSeries();
-        const grouped = aggregateMonthly(series.statements as Array<any>, (item) => item.MonthDisplay || '', (acc, item) => {
-            acc.MonthDisplay = acc.display;
-            acc.TotalDeliveries = safeNumber(acc.TotalDeliveries) + safeNumber(item.DeliveryAmount);
-            acc.TotalAllDeductions = safeNumber(acc.TotalAllDeductions) + safeNumber(item.TotalDeductions);
-            acc.TotalNetPayments = safeNumber(acc.TotalNetPayments) + safeNumber(item.NetPayment);
+        const grouped = new Map<string, any>();
+        
+        // Group statements by month and track farmer credit/deficit status
+        series.statements.forEach((item: any) => {
+            const date = item.MonthDisplay || '';
+            const key = monthKey(date);
+            const display = monthDisplay(date);
+            
+            if (!grouped.has(key)) {
+                grouped.set(key, {
+                    key,
+                    MonthDisplay: display,
+                    TotalDeliveries: 0,
+                    TotalAllDeductions: 0,
+                    TotalNetPayments: 0,
+                    FarmersInCredit: 0,
+                    FarmersInDeficit: 0,
+                    __farmerStatus: new Map<string, boolean>(), // true = credit, false = deficit
+                });
+            }
+            
+            const month = grouped.get(key)!;
+            month.TotalDeliveries = safeNumber(month.TotalDeliveries) + safeNumber(item.DeliveryAmount);
+            month.TotalAllDeductions = safeNumber(month.TotalAllDeductions) + safeNumber(item.TotalDeductions);
+            month.TotalNetPayments = safeNumber(month.TotalNetPayments) + safeNumber(item.NetPayment);
+            
+            // Track if this farmer is in credit or deficit for this month
+            const isCredit = safeNumber(item.NetPayment) >= 0;
+            month.__farmerStatus.set(item.FarmerId, isCredit);
         });
-        return grouped;
+        
+        // Calculate final credit/deficit counts
+        const result = Array.from(grouped.values())
+            .map((month: any) => {
+                month.FarmersInCredit = Array.from(month.__farmerStatus.values()).filter(v => v).length;
+                month.FarmersInDeficit = Array.from(month.__farmerStatus.values()).filter(v => !v).length;
+                delete month.__farmerStatus;
+                return month;
+            })
+            .sort((a, b) => a.key.localeCompare(b.key));
+        
+        return result;
     },
     statementSociety: async () => unwrapItem(await requestJSON('/dashboard/lifetime')),
 };

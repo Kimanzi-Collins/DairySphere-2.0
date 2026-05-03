@@ -4,6 +4,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MapPin, Phone, Mail, Calendar, ArrowRight, Pencil } from 'lucide-react';
 import type { Farmer } from '../../types';
+import { BASE_URL } from '../../api';
 import { formatDate } from '../../utils/formatCurrency';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -13,8 +14,6 @@ interface FarmerCardProps {
     index: number;
     onEditProfilePic?: (farmer: Farmer) => void;
 }
-
-const API_BASE = 'http://localhost:5000';
 
 export default function FarmerCard({ farmer, index, onEditProfilePic }: FarmerCardProps) {
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -57,7 +56,7 @@ export default function FarmerCard({ farmer, index, onEditProfilePic }: FarmerCa
         && farmer.ProfilePicUrl.trim().length > 0
         && farmer.ProfilePicUrl.trim().toLowerCase() !== 'null';
     const profilePic = hasValidProfilePic
-        ? `${API_BASE}${farmer.ProfilePicUrl}`
+        ? `${BASE_URL}/${farmer.ProfilePicUrl}`
         : defaultAvatar;
     return (
         <div

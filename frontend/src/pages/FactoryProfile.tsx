@@ -26,9 +26,13 @@ const FactoryProfile = () => {
 
       try {
         const fullList = await deliveriesAPI.getAll() as any[];
-        const delList = fullList.filter((delivery: any) =>
-          String(delivery.FactoryId || '').toUpperCase() === String(id || '').toUpperCase()
-        );
+        const factoryId = String(facObj.FactoryId || id || '').toUpperCase();
+        const factoryName = String(facObj.FactoryName || '').toUpperCase();
+        const delList = fullList.filter((delivery: any) => {
+          const deliveryFactoryId = String(delivery.FactoryId || delivery.FACTORYID || '').toUpperCase();
+          const deliveryFactoryName = String(delivery.FactoryName || delivery.FACTORYNAME || '').toUpperCase();
+          return deliveryFactoryId === factoryId || deliveryFactoryName === factoryName;
+        });
         setDeliveries(delList);
 
         const monthly: Record<string, { month: string; sortKey: string; deliveries: number; totalLitres: number; totalAmount: number }> = {};

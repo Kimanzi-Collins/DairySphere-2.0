@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Farmer } from '../../types';
-import { farmersAPI } from '../../api';
+import { farmersAPI, BASE_URL } from '../../api';
 import Modal from '../common/Modal';
 import FormField, { inputStyle, selectStyle } from '../common/FormField';
 
@@ -12,7 +12,6 @@ interface FarmerFormProps {
 }
 
 export default function FarmerForm({ isOpen, onClose, onSaved, editFarmer }: FarmerFormProps) {
-    const API_BASE = 'http://localhost:5000';
     const [form, setForm] = useState({
         farmerName: '',
         dateOfBirth: '',
@@ -36,7 +35,7 @@ export default function FarmerForm({ isOpen, onClose, onSaved, editFarmer }: Far
                 location: editFarmer.Location,
                 contact: editFarmer.Contact,
             });
-            setPreviewUrl(editFarmer.ProfilePicUrl ? `${API_BASE}${editFarmer.ProfilePicUrl}` : '');
+            setPreviewUrl(editFarmer.ProfilePicUrl ? `${BASE_URL}/${editFarmer.ProfilePicUrl}` : '');
         } else {
             setForm({ farmerName: '', dateOfBirth: '', gender: '', email: '', location: '', contact: '' });
             setPreviewUrl('');

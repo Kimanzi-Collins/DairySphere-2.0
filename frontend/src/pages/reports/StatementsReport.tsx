@@ -67,7 +67,18 @@ export default function StatementsReport() {
         load();
     }, []);
 
-    const recentStatements = useMemo(() => statements.slice(-120).reverse(), [statements]);
+    const recentStatements = useMemo(() => {
+        // Filter to only include records with actual deductions/activity
+        return statements
+            .filter(s => (s.TotalDeductions ?? 0) > 0 || (s.DeliveryAmount ?? 0) > 0)
+            .slice(-120)
+            .reverse();
+    }, [statements]);
+
+    // Calculate total deductions from statements (override backend's potentially incorrect value)
+    const calculatedTotalDeductions = useMemo(() => {
+        return statements.reduce((sum, s) => sum + (s.TotalDeductions ?? 0), 0);
+    }, [statements]);
 
     if (loading) return <ReportLoading label="Loading statements report..." />;
     if (error) return <ReportError message={error} />;
@@ -99,7 +110,7 @@ export default function StatementsReport() {
             <div style={statsGridStyle}>
                 <Metric icon={Users} label="Farmers" value={(summary?.TotalFarmers || 0).toLocaleString()} delay={0.04} />
                 <Metric icon={Wallet} label="Delivery Revenue" value={formatCurrency(summary?.TotalDeliveryRevenue || 0)} delay={0.1} />
-                <Metric icon={BadgeMinus} label="Deductions" value={formatCurrency(summary?.TotalDeductions || 0)} delay={0.16} />
+                <Metric icon={BadgeMinus} label="Deductions" value={formatCurrency(calculatedTotalDeductions)} delay={0.16} />
                 <Metric icon={FileText} label="Disbursed" value={formatCurrency(summary?.TotalDisbursed || 0)} delay={0.22} />
             </div>
 

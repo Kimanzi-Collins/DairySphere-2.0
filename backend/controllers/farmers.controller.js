@@ -93,10 +93,70 @@ const getFarmerSummary = async (req, res) => {
     try {
         const { id } = req.params;
 
+        // Perform real-time aggregation to avoid stale summary table data
         const result = await execute(
-            `SELECT *
-             FROM   vw_farmer_lifetime_earnings
-             WHERE  FarmerId = :id`,
+            `WITH MonthlyTotals AS (
+                SELECT 
+                    SummaryMonth,
+                    SUM(Revenue - Commission - Loans - Purchases) as NetPayment
+                FROM (
+                    SELECT TO_CHAR(DeliveryDate, 'YYYY-MM') as SummaryMonth, Amount as Revenue, 0 as Commission, 0 as Loans, 0 as Purchases FROM Deliveries WHERE FarmerId = :id
+                    UNION ALL
+                    SELECT TO_CHAR(SaleDate, 'YYYY-MM'), 0, 0, Commission, 0, 0 FROM Sales WHERE FarmerId = :id
+                    UNION ALL
+                    SELECT RepaymentMonth, 0, 0, 0, RepaymentAmount, 0 FROM LoanRepayments WHERE FarmerId = :id AND RepaymentStatus = 'Paid'
+                    UNION ALL
+                    SELECT TO_CHAR(DateOfPurchase, 'YYYY-MM'), 0, 0, 0, 0, PurchaseAmount FROM InputPurchases WHERE FarmerId = :id
+                )
+                GROUP BY SummaryMonth
+            )
+            SELECT 
+                f.FarmerId,
+                f.FarmerName,
+                f.Location           AS FarmerLocation,
+                f.Contact            AS FarmerContact,
+                f.Email              AS FarmerEmail,
+                f.ProfilePicUrl,
+                TO_CHAR(f.EnrolmentDate, 'DD-Mon-YYYY') as EnrolmentDate,
+                FLOOR(MONTHS_BETWEEN(SYSDATE, f.DateOfBirth) / 12) as Age,
+                f.Gender,
+                
+                NVL(d.TotalLitres, 0) AS LifetimeLitres,
+                NVL(d.TotalAmount, 0) AS LifetimeDeliveryAmount,
+                NVL(d.TotalCount, 0)  AS LifetimeDeliveries,
+                
+                NVL(s.TotalComm, 0)   AS LifetimeCommission,
+                NVL(lr.TotalPaid, 0)  AS LifetimeLoanDeductions,
+                NVL(p.TotalPurch, 0)  AS LifetimeInputsPurchased,
+                
+                (NVL(s.TotalComm, 0) + NVL(lr.TotalPaid, 0) + NVL(p.TotalPurch, 0)) AS LifetimeTotalDeductions,
+                (NVL(d.TotalAmount, 0) - (NVL(s.TotalComm, 0) + NVL(lr.TotalPaid, 0) + NVL(p.TotalPurch, 0))) AS LifetimeNetEarnings,
+                
+                (SELECT COUNT(*) FROM MonthlyTotals) AS ActiveMonths,
+                (SELECT AVG(NetPayment) FROM MonthlyTotals) AS AvgMonthlyNetPayment,
+                (SELECT MAX(NetPayment) FROM MonthlyTotals) AS BestMonthEarning,
+                (SELECT MIN(NetPayment) FROM MonthlyTotals) AS WorstMonthEarning,
+                (SELECT COUNT(*) FROM MonthlyTotals WHERE NetPayment > 0) AS MonthsInCredit,
+                (SELECT COUNT(*) FROM MonthlyTotals WHERE NetPayment < 0) AS MonthsInDeficit
+
+            FROM Farmers f
+            LEFT JOIN (
+                SELECT FarmerId, SUM(MilkQuantity) as TotalLitres, SUM(Amount) as TotalAmount, COUNT(*) as TotalCount
+                FROM Deliveries GROUP BY FarmerId
+            ) d ON f.FarmerId = d.FarmerId
+            LEFT JOIN (
+                SELECT FarmerId, SUM(Commission) as TotalComm
+                FROM Sales GROUP BY FarmerId
+            ) s ON f.FarmerId = s.FarmerId
+            LEFT JOIN (
+                SELECT FarmerId, SUM(PurchaseAmount) as TotalPurch
+                FROM InputPurchases GROUP BY FarmerId
+            ) p ON f.FarmerId = p.FarmerId
+            LEFT JOIN (
+                SELECT FarmerId, SUM(RepaymentAmount) as TotalPaid
+                FROM LoanRepayments WHERE RepaymentStatus = 'Paid' GROUP BY FarmerId
+            ) lr ON f.FarmerId = lr.FarmerId
+            WHERE f.FarmerId = :id`,
             { id }
         );
 
@@ -126,11 +186,31 @@ const getFarmerMonthlyEarnings = async (req, res) => {
     try {
         const { id } = req.params;
 
+        // Real-time aggregation of monthly data to ensure immediate visibility of new records
         const result = await execute(
-            `SELECT *
-             FROM   vw_monthly_earnings
-             WHERE  FarmerId = :id
-             ORDER  BY SummaryMonth DESC`,
+            `SELECT 
+                SummaryMonth,
+                NVL(SUM(Litres), 0)      AS TotalLitres,
+                NVL(SUM(Revenue), 0)     AS MilkSalesAmount,
+                NVL(SUM(Commission), 0)  AS AgentCommission,
+                NVL(SUM(Loans), 0)       AS LoanDeductions,
+                NVL(SUM(Purchases), 0)   AS InputsPurchased,
+                NVL(SUM(Revenue - Commission - Loans - Purchases), 0) AS NetEarnings,
+                CASE 
+                    WHEN SUM(Revenue - Commission - Loans - Purchases) >= 0 THEN 'Credit'
+                    ELSE 'Deficit'
+                END AS PaymentStatus
+            FROM (
+                SELECT TO_CHAR(DeliveryDate, 'YYYY-MM') as SummaryMonth, MilkQuantity as Litres, Amount as Revenue, 0 as Commission, 0 as Loans, 0 as Purchases FROM Deliveries WHERE FarmerId = :id
+                UNION ALL
+                SELECT TO_CHAR(SaleDate, 'YYYY-MM'), 0, 0, Commission, 0, 0 FROM Sales WHERE FarmerId = :id
+                UNION ALL
+                SELECT RepaymentMonth, 0, 0, 0, RepaymentAmount, 0 FROM LoanRepayments WHERE FarmerId = :id AND RepaymentStatus = 'Paid'
+                UNION ALL
+                SELECT TO_CHAR(DateOfPurchase, 'YYYY-MM'), 0, 0, 0, 0, PurchaseAmount FROM InputPurchased WHERE FarmerId = :id
+            )
+            GROUP BY SummaryMonth
+            ORDER BY SummaryMonth DESC`,
             { id }
         );
 

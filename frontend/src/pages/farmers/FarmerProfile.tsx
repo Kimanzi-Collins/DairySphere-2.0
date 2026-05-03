@@ -10,7 +10,7 @@ import {
     BarChart, Bar, XAxis, YAxis, Tooltip,
     ResponsiveContainer, CartesianGrid
 } from 'recharts';
-import { reportsAPI } from '../../api';
+import { reportsAPI, BASE_URL } from '../../api';
 import GlassCard from '../../components/common/GlassCard';
 import StatusBadge from '../../components/common/StatusBadge';
 import { formatCurrency } from '../../utils/formatCurrency';
@@ -55,8 +55,6 @@ interface Monthly {
     TotalLitres: number;
     DeliveryCount: number;
 }
-
-const API_BASE = 'http://localhost:5000';
 
 const ChartTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload) return null;
@@ -127,12 +125,63 @@ export default function FarmerProfile() {
         return <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: 60 }}>Farmer not found or has no transactions</p>;
     }
 
-    const pic = profile.ProfilePicUrl
-        ? `${API_BASE}${profile.ProfilePicUrl}`
-        : `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.FarmerName)}&background=8b7cf6&color=fff&size=200&font-size=0.4&bold=true`;
+    // Build profile picture URL with fallback to avatar initials
+    const getProfilePicUrl = (): string => {
+        if (profile.ProfilePicUrl) {
+            if (typeof profile.ProfilePicUrl === 'string' && profile.ProfilePicUrl.trim().length > 0) {
+                // If it's already a full URL, use it
+                if (profile.ProfilePicUrl.startsWith('http')) {
+                    return profile.ProfilePicUrl;
+                }
+                // Otherwise, construct relative URL using BASE_URL
+                return `${BASE_URL}/${profile.ProfilePicUrl}`;
+            }
+        }
+        
+        // Fallback to avatar service with farmer initials
+        const name = String(profile.FarmerName || 'Farmer').trim();
+        const params = new URLSearchParams({
+            name,
+            background: '8b7cf6',
+            color: 'ffffff',
+            size: '200',
+            font_size: '0.33',
+            bold: 'true',
+        });
+        return `https://ui-avatars.com/api/?${params.toString()}`;
+    };
+    
+    const pic = getProfilePicUrl();
+
+    // Helper to extract month abbreviation from MonthDisplay (handles multiple formats)
+    const parseMonthLabel = (display: string | undefined): string => {
+        if (!display) return '—';
+        const str = String(display).trim();
+        
+        // Try splitting by space first (e.g., "May 2027" -> "May")
+        const parts = str.split(' ');
+        if (parts.length > 0) {
+            const firstPart = parts[0];
+            // If it's a full month name, return first 3 chars
+            if (/^[A-Za-z]{3,}$/.test(firstPart)) {
+                return firstPart.substring(0, 3);
+            }
+        }
+        
+        // Try parsing as date string (e.g., "2027-05" or "2027-05-01")
+        const dateMatch = str.match(/(\d{4})-(\d{2})/);
+        if (dateMatch) {
+            const monthNum = parseInt(dateMatch[2], 10);
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return months[monthNum - 1] || '—';
+        }
+        
+        // Fallback to first 3 chars
+        return str.substring(0, 3);
+    };
 
     const chartData = monthly.map(m => ({
-        month: (m.MonthDisplay || '').split(' ')[0]?.substring(0, 3),
+        month: parseMonthLabel(m.MonthDisplay),
         earnings: m.DeliveryAmount,
         deductions: m.TotalDeductions,
         net: m.NetPayment,
@@ -163,7 +212,24 @@ export default function FarmerProfile() {
                 {/* Profile pic + Name row */}
                 <div style={S.profileTop}>
                     <div style={S.avatarWrap}>
-                        <img src={pic} alt={profile.FarmerName} style={S.avatar} />
+                        <img 
+                            src={pic} 
+                            alt={profile.FarmerName} 
+                            style={S.avatar}
+                            onError={(e) => {
+                                // Fallback to avatar initials if image fails to load
+                                const name = String(profile.FarmerName || 'Farmer').trim();
+                                const params = new URLSearchParams({
+                                    name,
+                                    background: '8b7cf6',
+                                    color: 'ffffff',
+                                    size: '200',
+                                    font_size: '0.33',
+                                    bold: 'true',
+                                });
+                                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?${params.toString()}`;
+                            }}
+                        />
                         <div style={{
                             ...S.onlineDot,
                             background: profile.LifetimeNetEarnings >= 0 ? 'var(--secondary)' : 'var(--error)',
@@ -255,12 +321,12 @@ export default function FarmerProfile() {
                     <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-bright)', marginBottom: 2 }}>Performance</h3>
                     <p style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 16 }}>Key indicators</p>
                     {[
-                        { label: 'Best Month', value: formatCurrency(profile.BestMonthEarning), color: 'var(--secondary)' },
-                        { label: 'Worst Month', value: formatCurrency(profile.WorstMonthEarning), color: 'var(--error)' },
-                        { label: 'Avg Monthly', value: formatCurrency(profile.AvgMonthlyNetPayment), color: 'var(--primary)' },
-                        { label: 'Months in Credit', value: String(profile.MonthsInCredit), color: 'var(--secondary)' },
-                        { label: 'Months in Deficit', value: String(profile.MonthsInDeficit), color: 'var(--error)' },
-                        { label: 'Total Litres', value: `${profile.LifetimeLitres?.toLocaleString() || 0} L`, color: 'var(--accent)' },
+                        { label: 'Best Month', value: formatCurrency(profile.BestMonthEarning ?? 0), color: 'var(--secondary)' },
+                        { label: 'Worst Month', value: formatCurrency(profile.WorstMonthEarning ?? 0), color: 'var(--error)' },
+                        { label: 'Avg Monthly', value: formatCurrency(profile.AvgMonthlyNetPayment ?? 0), color: 'var(--primary)' },
+                        { label: 'Months in Credit', value: String(profile.MonthsInCredit ?? 0), color: 'var(--secondary)' },
+                        { label: 'Months in Deficit', value: String(profile.MonthsInDeficit ?? 0), color: 'var(--error)' },
+                        { label: 'Total Litres', value: `${(profile.LifetimeLitres ?? 0)?.toLocaleString() || 0} L`, color: 'var(--accent)' },
                     ].map(item => (
                         <div key={item.label} style={{
                             display: 'flex', justifyContent: 'space-between',

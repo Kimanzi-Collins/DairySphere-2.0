@@ -16,15 +16,7 @@ const Deliveries = () => {
 
   const load = async () => {
     try {
-      let data = await deliveriesAPI.getAll() as any[];
-      // FALLBACK: Manually parse currency strings if normalization didn't work
-      data = data.map(d => ({
-        ...d,
-        RatePerLitre: typeof d.RatePerLitre === 'number' ? d.RatePerLitre : parseFloat(String(d.RatePerLitre || '0').replace(/[^0-9.-]/g, '')) || 0,
-        Amount: typeof d.Amount === 'number' ? d.Amount : parseFloat(String(d.Amount || '0').replace(/[^0-9.-]/g, '')) || 0,
-        MilkQuantity: typeof d.MilkQuantity === 'number' ? d.MilkQuantity : parseFloat(String(d.MilkQuantity || '0').replace(/[^0-9.-]/g, '')) || 0,
-      }));
-      console.log('💾 First delivery from API (after fallback):', data[0]);
+      const data = await deliveriesAPI.getAll() as any[];
       setDeliveries(data);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
