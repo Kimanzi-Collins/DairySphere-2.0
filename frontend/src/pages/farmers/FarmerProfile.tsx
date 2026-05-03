@@ -56,7 +56,7 @@ interface Monthly {
     DeliveryCount: number;
 }
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = 'http://localhost:5000';
 
 const ChartTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload) return null;

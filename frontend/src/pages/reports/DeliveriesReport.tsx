@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { reportsAPI } from '../../api';
 import GlassCard from '../../components/common/GlassCard';
+import ExportButtons from '../../components/common/ExportButtons';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 interface DeliveryOverview {
@@ -71,8 +72,24 @@ export default function DeliveriesReport() {
     return (
         <div>
             <div className="glass-card" style={{ padding: '22px 24px', marginBottom: 18 }}>
-                <h2 style={titleStyle}>Deliveries Report</h2>
-                <p style={subTitleStyle}>Milk volume, revenue trends, and farmer delivery performance.</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
+                    <div>
+                        <h2 style={titleStyle}>Deliveries Report</h2>
+                        <p style={subTitleStyle}>Milk volume, revenue trends, and farmer delivery performance.</p>
+                    </div>
+                    <ExportButtons
+                        filename="deliveries-report.xlsx"
+                        columns={[
+                            { header: 'Farmer ID', key: 'FarmerId' },
+                            { header: 'Farmer Name', key: 'FarmerName' },
+                            { header: 'Location', key: 'FarmerLocation' },
+                            { header: 'Deliveries', key: 'TotalDeliveries' },
+                            { header: 'Litres', key: 'TotalLitres' },
+                            { header: 'Revenue', key: 'TotalRevenue', isCurrency: true },
+                        ]}
+                        rows={overview}
+                    />
+                </div>
             </div>
 
             <div style={statsGridStyle}>

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API = 'http://localhost:3001/api';
+import { factoriesAPI } from '../../api';
 
 interface Props {
   mode: 'add' | 'edit';
@@ -30,13 +29,15 @@ const FactoryForm = ({ mode, initialData, onSuccess, onClose }: Props) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true); setError('');
     try {
-      const url = mode === 'add' ? `${API}/factories` : `${API}/factories/${initialData?.FactoryId}`;
       const payload = {
         ...formData,
         contact: formData.contact.replace(/\D/g, ''),
       };
-      const res = await fetch(url, { method: mode === 'add' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to save');
+      if (mode === 'add') {
+        await factoriesAPI.create(payload);
+      } else {
+        await factoriesAPI.update(initialData?.FactoryId, payload);
+      }
       onSuccess();
     } catch (err: any) { setError(err.message); }
     finally { setLoading(false); }

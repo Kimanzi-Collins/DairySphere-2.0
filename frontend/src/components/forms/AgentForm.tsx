@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API = 'http://localhost:3001/api';
+import { agentsAPI } from '../../api';
 
 interface Props {
   mode: 'add' | 'edit';
@@ -31,13 +30,11 @@ const AgentForm = ({ mode, initialData, onSuccess, onClose }: Props) => {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const url = mode === 'add' ? `${API}/agents` : `${API}/agents/${initialData?.AgentId}`;
-      const res = await fetch(url, {
-        method: mode === 'add' ? 'POST' : 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to save');
+      if (mode === 'add') {
+        await agentsAPI.create(formData);
+      } else {
+        await agentsAPI.update(initialData?.AgentId, formData);
+      }
       onSuccess();
     } catch (err: any) { setError(err.message); }
     finally { setLoading(false); }

@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { reportsAPI } from '../../api';
 import GlassCard from '../../components/common/GlassCard';
+import ExportButtons from '../../components/common/ExportButtons';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 interface AgentSummary {
@@ -90,8 +91,24 @@ export default function AgentsCommissionReport() {
     return (
         <div>
             <div className="glass-card" style={{ padding: '22px 24px', marginBottom: 18 }}>
-                <h2 style={titleStyle}>Agents Commission Report</h2>
-                <p style={subTitleStyle}>Agent sales, commissions, and monthly performance trends.</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
+                    <div>
+                        <h2 style={titleStyle}>Agents Commission Report</h2>
+                        <p style={subTitleStyle}>Agent sales, commissions, and monthly performance trends.</p>
+                    </div>
+                    <ExportButtons
+                        filename="agents-commission-report.xlsx"
+                        columns={[
+                            { header: 'Agent ID', key: 'AgentId' },
+                            { header: 'Agent Name', key: 'AgentName' },
+                            { header: 'Location', key: 'AgentLocation' },
+                            { header: 'Total Transactions', key: 'TotalTransactions' },
+                            { header: 'Total Sales', key: 'TotalSales', isCurrency: true },
+                            { header: 'Total Commission', key: 'TotalCommission', isCurrency: true },
+                        ]}
+                        rows={summary}
+                    />
+                </div>
             </div>
 
             <div style={statsGridStyle}>

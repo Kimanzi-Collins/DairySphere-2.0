@@ -11,7 +11,8 @@ import {
     Legend,
 } from 'recharts';
 import GlassCard from '../../components/common/GlassCard';
-import { reportsAPI } from '../../api';
+import ExportButtons from '../../components/common/ExportButtons';
+import { reportsAPI, loanRepaymentsAPI } from '../../api';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 interface LoanPortfolio {
@@ -37,24 +38,41 @@ interface ActiveLoan {
     DueDateDisplay: string;
 }
 
+interface RepaymentRow {
+    RepaymentId: string;
+    LoanId: string;
+    FarmerId: string;
+    FarmerName: string;
+    RepaymentMonth: string;
+    ScheduledDate: string;
+    PaidDate: string | null;
+    RepaymentAmount: number;
+    RemainingBalance: number;
+    RepaymentStatus: string;
+    Notes: string | null;
+}
+
 export default function LoansReport() {
     const [portfolio, setPortfolio] = useState<LoanPortfolio | null>(null);
     const [monthly, setMonthly] = useState<MonthlyLoan[]>([]);
     const [activeLoans, setActiveLoans] = useState<ActiveLoan[]>([]);
+    const [repayments, setRepayments] = useState<RepaymentRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const load = async () => {
             try {
-                const [portfolioData, monthlyData, activeData] = await Promise.all([
+                const [portfolioData, monthlyData, activeData, repaymentData] = await Promise.all([
                     reportsAPI.loansPortfolio(),
                     reportsAPI.loansMonthly(),
                     reportsAPI.loansActive(),
+                    loanRepaymentsAPI.getAll(),
                 ]);
                 setPortfolio(portfolioData as LoanPortfolio);
                 setMonthly(monthlyData as MonthlyLoan[]);
                 setActiveLoans(activeData as ActiveLoan[]);
+                setRepayments(repaymentData as RepaymentRow[]);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to load loans report');
             } finally {
@@ -71,8 +89,23 @@ export default function LoansReport() {
     return (
         <div>
             <div className="glass-card" style={{ padding: '22px 24px', marginBottom: 18 }}>
-                <h2 style={titleStyle}>Loans Report</h2>
-                <p style={subTitleStyle}>Loan portfolio exposure, active balances, and disbursement trends.</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
+                    <div>
+                        <h2 style={titleStyle}>Loans Report</h2>
+                        <p style={subTitleStyle}>Loan portfolio exposure, active balances, repayment schedules, and disbursement trends.</p>
+                    </div>
+                    <ExportButtons
+                        filename="loans-report.xlsx"
+                        columns={[
+                            { header: 'Loan ID', key: 'LoanId' },
+                            { header: 'Farmer', key: 'FarmerName' },
+                            { header: 'Amount', key: 'LoanAmount', isCurrency: true },
+                            { header: 'Outstanding', key: 'OutstandingBalance', isCurrency: true },
+                            { header: 'Due Date', key: 'DueDateDisplay' },
+                        ]}
+                        rows={activeLoans}
+                    />
+                </div>
             </div>
 
             <div style={statsGridStyle}>
@@ -132,6 +165,44 @@ export default function LoansReport() {
                     </div>
                 </GlassCard>
             </div>
+
+            <GlassCard hover={false} scrollReveal delay={0.22} style={{ marginTop: 14 }}>
+                <h3 style={sectionTitleStyle}>Loan Repayments Tracking</h3>
+                <div style={{ overflowX: 'auto', maxHeight: 340 }}>
+                    <table style={tableStyle}>
+                        <thead>
+                            <tr>
+                                <th style={thStyle}>Loan</th>
+                                <th style={thStyle}>Farmer</th>
+                                <th style={thStyle}>Month</th>
+                                <th style={thStyle}>Scheduled</th>
+                                <th style={thStyle}>Paid</th>
+                                <th style={thStyle}>Amount</th>
+                                <th style={thStyle}>Balance</th>
+                                <th style={thStyle}>Status</th>
+                                <th style={thStyle}>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {repayments.slice(0, 20).map((repayment) => (
+                                <tr key={repayment.RepaymentId}>
+                                    <td style={tdStyle}>{repayment.LoanId}</td>
+                                    <td style={tdStyle}>{repayment.FarmerName}</td>
+                                    <td style={tdStyle}>{repayment.RepaymentMonth}</td>
+                                    <td style={tdStyle}>{repayment.ScheduledDate}</td>
+                                    <td style={tdStyle}>{repayment.PaidDate || '—'}</td>
+                                    <td style={tdStyle}>{formatCurrency(repayment.RepaymentAmount || 0)}</td>
+                                    <td style={{ ...tdStyle, color: (repayment.RemainingBalance || 0) > 0 ? 'var(--warning)' : 'var(--secondary)' }}>
+                                        {formatCurrency(repayment.RemainingBalance || 0)}
+                                    </td>
+                                    <td style={tdStyle}>{repayment.RepaymentStatus}</td>
+                                    <td style={tdStyle}>{repayment.Notes || '—'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </GlassCard>
         </div>
     );
 }
@@ -226,4 +297,29 @@ const spinnerStyle: React.CSSProperties = {
     border: '3px solid rgba(255,255,255,0.12)',
     borderTopColor: 'var(--primary)',
     animation: 'spin 0.8s linear infinite',
+};
+
+const tableStyle: React.CSSProperties = {
+    width: '100%',
+    borderCollapse: 'collapse',
+};
+
+const thStyle: React.CSSProperties = {
+    textAlign: 'left',
+    padding: '10px 12px',
+    color: 'var(--text-faint)',
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 0.5,
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
+    textTransform: 'uppercase',
+    whiteSpace: 'nowrap',
+};
+
+const tdStyle: React.CSSProperties = {
+    padding: '11px 12px',
+    color: 'var(--text-normal)',
+    fontSize: 13,
+    borderBottom: '1px solid rgba(255,255,255,0.04)',
+    whiteSpace: 'nowrap',
 };

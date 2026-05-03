@@ -3,9 +3,8 @@ import { gsap } from 'gsap';
 import { Layers, TrendingUp, TrendingDown, BarChart3, Edit3 } from 'lucide-react';
 import StatCard from '../components/common/StatCard';
 import Modal from '../components/common/Modal';
+import { milkQualityAPI } from '../api';
 import '../styles/MilkQuality.css';
-
-const API = 'http://localhost:3001/api';
 
 interface Grade { QualityId: string; Grade: string; PricePerLitre: number; }
 
@@ -24,9 +23,7 @@ const MilkQuality = () => {
 
   const load = async () => {
     try {
-      const res = await fetch(`${API}/milk-quality`);
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : data.recordset ?? [];
+      const list = await milkQualityAPI.getAll() as Grade[];
       list.sort((a: Grade, b: Grade) => { const o: Record<string, number> = { AA: 0, A: 1, B: 2 }; return (o[a.Grade] ?? 9) - (o[b.Grade] ?? 9); });
       setGrades(list);
     } catch (err) { console.error(err); }
@@ -48,12 +45,7 @@ const MilkQuality = () => {
     if (!editGrade) return;
     setSaving(true); setError('');
     try {
-      const res = await fetch(`${API}/milk-quality/${editGrade.QualityId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grade: editGrade.Grade, pricePerLitre: Number(editPrice) })
-      });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed');
+      await milkQualityAPI.update(editGrade.QualityId, { grade: editGrade.Grade, pricePerLitre: Number(editPrice) });
       load(); setShowModal(false); setEditGrade(null);
     } catch (err: any) { setError(err.message); }
     finally { setSaving(false); }

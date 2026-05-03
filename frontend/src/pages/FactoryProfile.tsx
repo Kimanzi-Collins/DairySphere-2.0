@@ -5,9 +5,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { FileText, Droplet, DollarSign, TrendingUp } from 'lucide-react';
 import StatCard from '../components/common/StatCard';
 import { getEntityProfilePic } from '../utils/entityProfilePics';
+import { factoriesAPI, deliveriesAPI } from '../api';
 import '../styles/FactoryProfile.css';
-
-const API = 'http://localhost:3001/api';
 
 const FactoryProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,37 +20,29 @@ const FactoryProfile = () => {
 
   const load = async () => {
     try {
-      const facRes = await fetch(`${API}/factories/${id}`);
-      const facData = await facRes.json();
-      const facObj = Array.isArray(facData) ? facData[0] : facData.recordset?.[0] ?? facData;
+      const facObj = await factoriesAPI.getOne(id || '');
       console.log('Factory profile:', facObj);
       setFactory(facObj);
 
-      // Fetch deliveries for this factory
       try {
-        const delRes = await fetch(`${API}/deliveries?factoryId=${id}`);
-        if (delRes.ok) {
-          const delData = await delRes.json();
-          const fullList = Array.isArray(delData) ? delData : delData.recordset ?? [];
-          const delList = fullList.filter((delivery: any) =>
-            String(delivery.FactoryId || '').toUpperCase() === String(id || '').toUpperCase()
-          );
-          setDeliveries(delList);
+        const fullList = await deliveriesAPI.getAll() as any[];
+        const delList = fullList.filter((delivery: any) =>
+          String(delivery.FactoryId || '').toUpperCase() === String(id || '').toUpperCase()
+        );
+        setDeliveries(delList);
 
-          // Build monthly breakdown
-          const monthly: Record<string, { month: string; sortKey: string; deliveries: number; totalLitres: number; totalAmount: number }> = {};
-          delList.forEach((d: any) => {
-            const date = new Date(d.DeliveryDate || d.Date || d.DateDelivered || d.CreatedAt);
-            if (Number.isNaN(date.getTime())) return;
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            const label = date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
-            if (!monthly[key]) monthly[key] = { month: label, sortKey: key, deliveries: 0, totalLitres: 0, totalAmount: 0 };
-            monthly[key].deliveries += 1;
-            monthly[key].totalLitres += Number(d.MilkQuantity || d.Litres || d.Quantity || 0);
-            monthly[key].totalAmount += Number(d.Amount || d.TotalAmount || 0);
-          });
-          setMonthlyData(Object.values(monthly).sort((a, b) => a.sortKey.localeCompare(b.sortKey)));
-        }
+        const monthly: Record<string, { month: string; sortKey: string; deliveries: number; totalLitres: number; totalAmount: number }> = {};
+        delList.forEach((d: any) => {
+          const date = new Date(d.DeliveryDate || d.Date || d.DateDelivered || d.CreatedAt);
+          if (Number.isNaN(date.getTime())) return;
+          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          const label = date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+          if (!monthly[key]) monthly[key] = { month: label, sortKey: key, deliveries: 0, totalLitres: 0, totalAmount: 0 };
+          monthly[key].deliveries += 1;
+          monthly[key].totalLitres += Number(d.MilkQuantity || d.Litres || d.Quantity || 0);
+          monthly[key].totalAmount += Number(d.Amount || d.TotalAmount || 0);
+        });
+        setMonthlyData(Object.values(monthly).sort((a, b) => a.sortKey.localeCompare(b.sortKey)));
       } catch { console.log('Delivery data not available'); }
     } catch (err) { console.error('Failed to load factory:', err); }
     finally { setLoading(false); }

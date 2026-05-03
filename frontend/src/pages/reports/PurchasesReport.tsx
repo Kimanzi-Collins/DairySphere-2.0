@@ -11,6 +11,7 @@ import {
     Legend,
 } from 'recharts';
 import GlassCard from '../../components/common/GlassCard';
+import ExportButtons from '../../components/common/ExportButtons';
 import { reportsAPI } from '../../api';
 import { formatCurrency } from '../../utils/formatCurrency';
 
@@ -69,8 +70,23 @@ export default function PurchasesReport() {
     return (
         <div>
             <div className="glass-card" style={{ padding: '22px 24px', marginBottom: 18 }}>
-                <h2 style={titleStyle}>Purchases Report</h2>
-                <p style={subTitleStyle}>Input sales performance, monthly spend, and top-selling products.</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
+                    <div>
+                        <h2 style={titleStyle}>Purchases Report</h2>
+                        <p style={subTitleStyle}>Input sales performance, monthly spend, and top-selling products.</p>
+                    </div>
+                    <ExportButtons
+                        filename="purchases-report.xlsx"
+                        columns={[
+                            { header: 'Input ID', key: 'InputId' },
+                            { header: 'Input Name', key: 'InputName' },
+                            { header: 'Times Purchased', key: 'TimesPurchased' },
+                            { header: 'Unique Buyers', key: 'UniqueBuyers' },
+                            { header: 'Total Revenue', key: 'TotalRevenue', isCurrency: true },
+                        ]}
+                        rows={popular}
+                    />
+                </div>
             </div>
 
             <div style={statsGridStyle}>

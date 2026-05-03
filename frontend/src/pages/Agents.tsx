@@ -6,9 +6,8 @@ import StatCard from '../components/common/StatCard';
 import Modal from '../components/common/Modal';
 import AgentForm from '../components/forms/AgentForm';
 import { fileToDataUrl, getEntityProfilePic, setEntityProfilePic } from '../utils/entityProfilePics';
+import { agentsAPI, salesAPI } from '../api';
 import '../styles/Agents.css';
-
-const API = 'http://localhost:3001/api';
 
 interface Agent {
   AgentId: string;
@@ -39,15 +38,12 @@ const Agents = () => {
 
   const load = async () => {
     try {
-      const res = await fetch(`${API}/agents`);
-      const data = await res.json();
-      setAgents(Array.isArray(data) ? data : data.recordset ?? []);
-
-      const salesRes = await fetch(`${API}/sales`);
-      if (salesRes.ok) {
-        const salesData = await salesRes.json();
-        setSales(Array.isArray(salesData) ? salesData : salesData.recordset ?? []);
-      }
+      const [agentRows, salesRows] = await Promise.all([
+        agentsAPI.getAll(),
+        salesAPI.getAll(),
+      ]);
+      setAgents(agentRows as Agent[]);
+      setSales(salesRows as Sale[]);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -107,7 +103,7 @@ const Agents = () => {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete agent "${name}"?`)) return;
     try {
-      await fetch(`${API}/agents/${id}`, { method: 'DELETE' });
+      await agentsAPI.delete(id);
       load();
     } catch (err: any) { alert(err.message); }
   };

@@ -3,9 +3,8 @@ import { gsap } from 'gsap';
 import { ShoppingCart, DollarSign, Package, Users, Search, Plus, Edit3, Trash2 } from 'lucide-react';
 import StatCard from '../components/common/StatCard';
 import PurchaseForm from '../components/forms/PurchaseForm';
+import { inputPurchasesAPI } from '../api';
 import '../styles/Transactions.css';
-
-const API = 'http://localhost:3001/api';
 
 const Purchases = () => {
   const [purchases, setPurchases] = useState<any[]>([]);
@@ -16,7 +15,7 @@ const Purchases = () => {
   const animated = useRef(false);
 
   const load = async () => {
-    try { const res = await fetch(`${API}/input-purchases`); const data = await res.json(); setPurchases(Array.isArray(data) ? data : data.recordset ?? []); }
+    try { setPurchases(await inputPurchasesAPI.getAll() as any[]); }
     catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
@@ -47,7 +46,7 @@ const Purchases = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this purchase?')) return;
-    try { await fetch(`${API}/input-purchases/${id}`, { method: 'DELETE' }); load(); } catch (err: any) { alert(err.message); }
+    try { await inputPurchasesAPI.delete(id); load(); } catch (err: any) { alert(err.message); }
   };
 
   if (loading) return <div className="page-loading"><div className="loading-spinner" /><p>Loading purchases...</p></div>;

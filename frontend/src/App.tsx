@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Layout from './components/layout/Layout.tsx';
 import Dashboard from './pages/Dashboard.tsx';
 import FarmersList from './pages/farmers/FarmersList.tsx';
@@ -19,37 +19,46 @@ import DeliveriesReport from './pages/reports/DeliveriesReport.tsx';
 import LoansReport from './pages/reports/LoansReport.tsx';
 import PurchasesReport from './pages/reports/PurchasesReport.tsx';
 import StatementsReport from './pages/reports/StatementsReport.tsx';
+import SignIn from './pages/SignIn.tsx';
+import SignUp from './pages/SignUp.tsx';
 
-
-
-
+function RequireAuth() {
+    return localStorage.getItem('dairysphere_token')
+        ? <Outlet />
+        : <Navigate to="/signin" replace />;
+}
 
 function App() {
     return (
         <Routes>
-            <Route element={<Layout />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/farmers" element={<FarmersList />} />
-                <Route path="/farmers/:id" element={<FarmerProfile />} />
-                <Route path="/agents" element={<Agents />} />
-                <Route path="/factories" element={<Factories />} />
-                <Route path="/agents/:id" element={<AgentProfile />} />
-                <Route path="/factories/:id" element={<FactoryProfile />} />
-                <Route path="/inputs" element={<Inputs />} />
-                <Route path="/milk-quality" element={<MilkQuality />} />
-                <Route path="/inputs" element={<Inputs />} />
-                <Route path="/milk-quality" element={<MilkQuality />} />
-                <Route path="/deliveries" element={<Deliveries />} />
-                <Route path="/loans" element={<Loans />} />
-                <Route path="/purchases" element={<Purchases />} />
-                <Route path="/sales" element={<Sales />} />
-                <Route path="/reports/farmers-list" element={<FarmersReport />} />
-                <Route path="/reports/agents-commission" element={<AgentsCommissionReport />} />
-                <Route path="/reports/deliveries" element={<DeliveriesReport />} />
-                <Route path="/reports/loans" element={<LoansReport />} />
-                <Route path="/reports/purchases" element={<PurchasesReport />} />
-                <Route path="/reports/statements" element={<StatementsReport />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
+
+            <Route element={<RequireAuth />}>
+                <Route element={<Layout />}>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/farmers" element={<FarmersList />} />
+                    <Route path="/farmers/:id" element={<FarmerProfile />} />
+                    <Route path="/agents" element={<Agents />} />
+                    <Route path="/factories" element={<Factories />} />
+                    <Route path="/agents/:id" element={<AgentProfile />} />
+                    <Route path="/factories/:id" element={<FactoryProfile />} />
+                    <Route path="/inputs" element={<Inputs />} />
+                    <Route path="/milk-quality" element={<MilkQuality />} />
+                    <Route path="/deliveries" element={<Deliveries />} />
+                    <Route path="/loans" element={<Loans />} />
+                    <Route path="/purchases" element={<Purchases />} />
+                    <Route path="/sales" element={<Sales />} />
+                    <Route path="/reports/farmers-list" element={<FarmersReport />} />
+                    <Route path="/reports/agents-commission" element={<AgentsCommissionReport />} />
+                    <Route path="/reports/deliveries" element={<DeliveriesReport />} />
+                    <Route path="/reports/loans" element={<LoansReport />} />
+                    <Route path="/reports/purchases" element={<PurchasesReport />} />
+                    <Route path="/reports/statements" element={<StatementsReport />} />
+                </Route>
             </Route>
+
+            <Route path="*" element={<Navigate to={localStorage.getItem('dairysphere_token') ? '/' : '/signin'} replace />} />
         </Routes>
     );
 }

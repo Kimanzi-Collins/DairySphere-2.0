@@ -3,9 +3,8 @@ import { gsap } from 'gsap';
 import { FileText, Droplet, DollarSign, TrendingUp, Search, Plus, Edit3, Trash2, TruckElectric } from 'lucide-react';
 import StatCard from '../components/common/StatCard';
 import DeliveryForm from '../components/forms/DeliveryForm';
+import { deliveriesAPI } from '../api';
 import '../styles/Transactions.css';
-
-const API = 'http://localhost:3001/api';
 
 const Deliveries = () => {
   const [deliveries, setDeliveries] = useState<any[]>([]);
@@ -17,9 +16,16 @@ const Deliveries = () => {
 
   const load = async () => {
     try {
-      const res = await fetch(`${API}/deliveries`);
-      const data = await res.json();
-      setDeliveries(Array.isArray(data) ? data : data.recordset ?? []);
+      let data = await deliveriesAPI.getAll() as any[];
+      // FALLBACK: Manually parse currency strings if normalization didn't work
+      data = data.map(d => ({
+        ...d,
+        RatePerLitre: typeof d.RatePerLitre === 'number' ? d.RatePerLitre : parseFloat(String(d.RatePerLitre || '0').replace(/[^0-9.-]/g, '')) || 0,
+        Amount: typeof d.Amount === 'number' ? d.Amount : parseFloat(String(d.Amount || '0').replace(/[^0-9.-]/g, '')) || 0,
+        MilkQuantity: typeof d.MilkQuantity === 'number' ? d.MilkQuantity : parseFloat(String(d.MilkQuantity || '0').replace(/[^0-9.-]/g, '')) || 0,
+      }));
+      console.log('💾 First delivery from API (after fallback):', data[0]);
+      setDeliveries(data);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -52,7 +58,7 @@ const Deliveries = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this delivery?')) return;
-    try { await fetch(`${API}/deliveries/${id}`, { method: 'DELETE' }); load(); } catch (err: any) { alert(err.message); }
+    try { await deliveriesAPI.delete(id); load(); } catch (err: any) { alert(err.message); }
   };
 
   if (loading) return <div className="page-loading"><div className="loading-spinner" /><p>Loading deliveries...</p></div>;

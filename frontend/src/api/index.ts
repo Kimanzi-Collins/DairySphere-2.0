@@ -1,160 +1,662 @@
-const API_BASE = 'http://localhost:3001/api';
+const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE = RAW_API_BASE.replace(/\/$/, '');
 
-async function fetchAPI<T>(endpoint: string): Promise<T> {
-    const res = await fetch(`${API_BASE}${endpoint}`);
-    if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
-    return res.json();
+type ApiEnvelope<T> = {
+    success?: boolean;
+    message?: string;
+    count?: number;
+    data?: T;
+    [key: string]: unknown;
+};
+
+type RequestOptions = {
+    method?: string;
+    body?: BodyInit | null;
+    skipAuth?: boolean;
+};
+
+const KEY_MAP: Record<string, string> = {
+    USERIDNUM: 'UserIdNum',
+    USERID: 'UserId',
+    USERNAME: 'Username',
+    EMAIL: 'Email',
+    PASSWORDHASH: 'PasswordHash',
+    ROLE: 'Role',
+    ISACTIVE: 'IsActive',
+    LASTLOGIN: 'LastLogin',
+    CREATEDAT: 'CreatedAt',
+    UPDATEDAT: 'UpdatedAt',
+
+    FARMERIDNUM: 'FarmerIdNum',
+    FARMERID: 'FarmerId',
+    FARMERNAME: 'FarmerName',
+    DATEOFBIRTH: 'DateOfBirth',
+    AGE: 'Age',
+    GENDER: 'Gender',
+    LOCATION: 'Location',
+    CONTACT: 'Contact',
+    ENROLMENTDATE: 'EnrolmentDate',
+    PROFILEPICURL: 'ProfilePicUrl',
+
+    AGENTID: 'AgentId',
+    AGENTNAME: 'AgentName',
+    FACTORYID: 'FactoryId',
+    FACTORYNAME: 'FactoryName',
+    INPUTID: 'InputId',
+    INPUTNAME: 'InputName',
+    INPUTPRICE: 'InputPrice',
+
+    QUALITYID: 'QualityId',
+    GRADE: 'Grade',
+    PRICEPERLITRE: 'PricePerLitre',
+    RATEPERLITRE: 'RatePerLitre',
+
+    LOANID: 'LoanId',
+    LOANAMOUNT: 'LoanAmount',
+    REPAYMENTPERIOD: 'RepaymentPeriod',
+    DATEBORROWED: 'DateBorrowed',
+    LOANSTATUS: 'LoanStatus',
+    OUTSTANDINGBALANCE: 'OutstandingBalance',
+    TOTALREPAID: 'TotalRepaid',
+    TOTALREPAYABLE: 'TotalRepayable',
+
+    REPAYMENTID: 'RepaymentId',
+    REPAYMENTDATE: 'RepaymentDate',
+    REPAYMENTAMOUNT: 'RepaymentAmount',
+    REPAYMENTSTATUS: 'RepaymentStatus',
+
+    DELIVERYID: 'DeliveryId',
+    BATCHREF: 'BatchRef',
+    MILKQUANTITY: 'MilkQuantity',
+    DELIVERYDATE: 'DeliveryDate',
+    AMOUNT: 'Amount',
+
+    PURCHASEID: 'PurchaseId',
+    PURCHASEAMOUNT: 'PurchaseAmount',
+    DATEOFPURCHASE: 'DateOfPurchase',
+    QUANTITY: 'Quantity',
+
+    SALEID: 'SaleId',
+    SALEDATE: 'SaleDate',
+    SALEAMOUNT: 'SaleAmount',
+    COMMISSION: 'Commission',
+
+    SUMMARYMONTH: 'SummaryMonth',
+    MONTHDISPLAY: 'MonthDisplay',
+    TXNMONTH: 'TxnMonth',
+    TXNYEAR: 'TxnYear',
+    TXNMONTHNUM: 'TxnMonthNum',
+    NETPAYMENT: 'NetPayment',
+    PAYMENTSTATUS: 'PaymentStatus',
+    TOTALDEDUCTIONS: 'TotalDeductions',
+    TOTALDELIVERIES: 'TotalDeliveries',
+    TOTALLITRES: 'TotalLitres',
+    TOTALREVENUE: 'TotalRevenue',
+    TOTALFARMERS: 'TotalFarmers',
+    TOTALSALEAMOUNT: 'TotalSaleAmount',
+    TOTALCOMMISSION: 'TotalCommission',
+    TOTALSALES: 'TotalSales',
+
+    LITRES: 'MilkQuantity',
+    Litres: 'MilkQuantity',
+    QUALITYGRADE: 'Grade',
+    QualityGrade: 'Grade',
+    TOTALAMOUNT: 'Amount',
+    TotalAmount: 'Amount',
+    UNITPRICE: 'InputPrice',
+    UnitPrice: 'InputPrice',
+    TOTALCOST: 'PurchaseAmount',
+    TotalCost: 'PurchaseAmount',
+    PURCHASEDATE: 'DateOfPurchase',
+    PurchaseDate: 'DateOfPurchase',
+    MONTHS: 'RepaymentPeriod',
+    Months: 'RepaymentPeriod',
+    MONTHLYDEDUCTION: 'MonthlyDeduction',
+    MonthlyDeduction: 'MonthlyDeduction',
+    PERCENTREPAID: 'PercentRepaid',
+    PercentRepaid: 'PercentRepaid',
+};
+
+const NUMERIC_KEYS = new Set([
+    'Age', 'MilkRank', 'RepaymentPeriod', 'TxnYear', 'TxnMonthNum',
+    'TotalSales', 'TotalFarmers', 'TotalDeliveries', 'DeliveryCount',
+    'ActiveMonths', 'MonthsInCredit', 'MonthsInDeficit',
+    'LoanAmount', 'RepaymentAmount', 'SaleAmount', 'Commission',
+    'InputPrice', 'Quantity', 'PurchaseAmount', 'Amount', 'RatePerLitre',
+    'PricePerLitre', 'MilkQuantity', 'TotalLitres', 'TotalEarnings',
+    'TotalRevenue', 'TotalOutstanding', 'OutstandingBalance', 'TotalRepayable',
+    'TotalRepaid', 'TotalPrincipal', 'DeliveryAmount', 'LoanDeduction',
+    'InputsDeduction', 'CommissionDeduction', 'TotalDeductions', 'NetPayment',
+    'AvgAge', 'AvgMonthlyPayment', 'AvgMonthlyNetPayment', 'BestMonthEarning',
+    'WorstMonthEarning', 'LifetimeDeliveries', 'LifetimeLitres',
+    'LifetimeDeliveryAmount', 'LifetimeCommission', 'LifetimeLoanDeductions',
+    'LifetimeInputsPurchased', 'LifetimeTotalDeductions', 'LifetimeNetEarnings',
+    'TotalSaleAmount', 'TotalCommission', 'TotalDisbursed', 'TotalTransactions',
+    'ActiveLoans', 'CompletedLoans', 'TotalLoans', 'FarmersInCredit',
+    'FarmersInDeficit', 'TotalNetPayments', 'MonthlyDeduction', 'PercentRepaid',
+]);
+
+function parseNumberish(value: unknown): unknown {
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : 0;
+    }
+
+    if (typeof value !== 'string') {
+        return value;
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) return 0;
+
+    // Handles values like "Ksh. 38,000.00" and "1,234" while keeping ids untouched via key filter.
+    const cleaned = trimmed.replace(/[^0-9.-]/g, '');
+    if (!cleaned || cleaned === '-' || cleaned === '.' || cleaned === '-.') {
+        return 0;
+    }
+
+    const parsed = Number(cleaned);
+    const result = Number.isFinite(parsed) ? parsed : 0;
+    
+    // DEBUG: Log currency parsing
+    if (trimmed.includes('Ksh')) {
+        console.log('🔧 [parseNumberish]', trimmed, '→', result);
+    }
+    
+    return result;
 }
 
-async function postAPI<T>(endpoint: string, data: Record<string, unknown>): Promise<T> {
-    const res = await fetch(`${API_BASE}${endpoint}`, {
+function normalizeApiData<T>(value: T): T {
+    if (Array.isArray(value)) {
+        return value.map((item) => normalizeApiData(item)) as T;
+    }
+
+    if (value && typeof value === 'object') {
+        const record = value as Record<string, unknown>;
+        const normalized: Record<string, unknown> = {};
+        Object.entries(record).forEach(([key, item]) => {
+            const mappedKey = KEY_MAP[key] || key;
+            const normalizedItem = normalizeApiData(item);
+            normalized[mappedKey] = NUMERIC_KEYS.has(mappedKey)
+                ? parseNumberish(normalizedItem)
+                : normalizedItem;
+        });
+        // DEBUG: Log if we're normalizing a delivery-like object
+        if (record.DELIVERYID || record.DeliveryId) {
+            console.log('🔧 [normalizeApiData] Normalized delivery:', {
+                input: { RATEPERLITRE: record.RATEPERLITRE, TOTALAMOUNT: record.TOTALAMOUNT },
+                output: { RatePerLitre: normalized['RatePerLitre'], Amount: normalized['Amount'] }
+            });
+        }
+        return normalized as T;
+    }
+
+    return value;
+}
+
+function getAuthToken() {
+    return localStorage.getItem('dairysphere_token');
+}
+
+async function requestJSON<T>(endpoint: string, options: RequestOptions = {}): Promise<ApiEnvelope<T>> {
+    const headers: Record<string, string> = {};
+
+    if (!options.skipAuth) {
+        const token = getAuthToken();
+        if (token) headers.Authorization = `Bearer ${token}`;
+    }
+
+    if (!(options.body instanceof FormData) && options.body !== undefined && options.body !== null) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    let res: Response;
+    try {
+        res = await fetch(`${API_BASE}${endpoint}`, {
+            method: options.method || 'GET',
+            headers,
+            body: options.body ?? null,
+        });
+    } catch {
+        throw new Error(`Unable to reach API at ${API_BASE}. Ensure backend server is running and VITE_API_BASE_URL is correct.`);
+    }
+
+    const payload = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+        throw new Error(payload?.message || `API Error: ${res.status}`);
+    }
+
+    return normalizeApiData(payload) as ApiEnvelope<T>;
+}
+
+function unwrapList<T>(payload: ApiEnvelope<T[]> | T[] | unknown): T[] {
+    if (Array.isArray(payload)) return payload;
+    const maybe = payload as ApiEnvelope<T[]>;
+    if (Array.isArray(maybe?.data)) return maybe.data;
+    return [];
+}
+
+function unwrapItem<T>(payload: ApiEnvelope<T> | T): T {
+    const maybe = payload as ApiEnvelope<T>;
+    return (maybe?.data as T) ?? (payload as T);
+}
+
+function monthKey(dateValue: string) {
+    if (!dateValue) return 'Unknown';
+    return dateValue.slice(0, 7);
+}
+
+function monthDisplay(dateValue: string) {
+    if (!dateValue) return 'Unknown';
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return dateValue.slice(0, 7);
+    return new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric' }).format(date);
+}
+
+function safeNumber(value: unknown) {
+    const num = Number(value ?? 0);
+    return Number.isFinite(num) ? num : 0;
+}
+
+function groupBy<T>(items: T[], keyFn: (item: T) => string) {
+    const map = new Map<string, T[]>();
+    items.forEach((item) => {
+        const key = keyFn(item);
+        const list = map.get(key) || [];
+        list.push(item);
+        map.set(key, list);
+    });
+    return map;
+}
+
+export const authAPI = {
+    login: async (username: string, password: string) => requestJSON('/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
-    return res.json();
-}
-
-async function putAPI<T>(endpoint: string, data: Record<string, unknown>): Promise<T> {
-    const res = await fetch(`${API_BASE}${endpoint}`, {
+        skipAuth: true,
+        body: JSON.stringify({ username, password }),
+    }),
+    register: async (username: string, email: string, password: string) => requestJSON('/auth/register', {
+        method: 'POST',
+        skipAuth: true,
+        body: JSON.stringify({ username, email, password }),
+    }),
+    me: async () => requestJSON('/auth/me'),
+    changePassword: async (currentPassword: string, newPassword: string) => requestJSON('/auth/change-password', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
-    return res.json();
-}
+        body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+};
 
-async function deleteAPI<T>(endpoint: string): Promise<T> {
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-        method: 'DELETE'
-    });
-    if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
-    return res.json();
-}
-
-// CRUD APIs
 export const farmersAPI = {
-    getAll: () => fetchAPI('/farmers'),
-    getOne: (id: string) => fetchAPI(`/farmers/${id}`),
-    create: (data: Record<string, unknown>) => postAPI('/farmers', data),
-    update: (id: string, data: Record<string, unknown>) => putAPI(`/farmers/${id}`, data),
-    delete: (id: string) => deleteAPI(`/farmers/${id}`),
+    getAll: async () => unwrapList(await requestJSON('/farmers')),
+    getOne: async (id: string) => unwrapItem(await requestJSON(`/farmers/${id}`)),
+    getSummary: async (id: string) => unwrapItem(await requestJSON(`/farmers/${id}/summary`)),
+    getMonthlyEarnings: async (id: string) => unwrapList(await requestJSON(`/farmers/${id}/monthly-earnings`)),
+    getTransactions: async (id: string) => unwrapList(await requestJSON(`/farmers/${id}/transactions`)),
+    create: async (data: Record<string, unknown>) => unwrapItem(await requestJSON('/farmers', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    })),
+    update: async (id: string, data: Record<string, unknown>) => unwrapItem(await requestJSON(`/farmers/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    })),
+    delete: async (id: string) => unwrapItem(await requestJSON(`/farmers/${id}`, { method: 'DELETE' })),
     uploadProfilePic: async (id: string, file: File) => {
         const formData = new FormData();
         formData.append('profilePic', file);
-
-        const res = await fetch(`${API_BASE}/farmers/${id}/profile-pic`, {
-            method: 'POST',
+        return unwrapItem(await requestJSON(`/farmers/${id}/profile-pic`, {
+            method: 'PUT',
             body: formData,
-        });
-
-        if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
-        return res.json();
+        }));
     },
 };
 
 export const agentsAPI = {
-    getAll: () => fetchAPI('/agents'),
-    getOne: (id: string) => fetchAPI(`/agents/${id}`),
-    create: (data: Record<string, unknown>) => postAPI('/agents', data),
-    update: (id: string, data: Record<string, unknown>) => putAPI(`/agents/${id}`, data),
-    delete: (id: string) => deleteAPI(`/agents/${id}`)
+    getAll: async () => unwrapList(await requestJSON('/agents')),
+    getOne: async (id: string) => unwrapItem(await requestJSON(`/agents/${id}`)),
+    getPerformance: async (id: string) => unwrapItem(await requestJSON(`/agents/${id}/performance`)),
+    getSales: async (id: string) => unwrapList(await requestJSON(`/agents/${id}/sales`)),
+    create: async (data: Record<string, unknown>) => unwrapItem(await requestJSON('/agents', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    })),
+    update: async (id: string, data: Record<string, unknown>) => unwrapItem(await requestJSON(`/agents/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    })),
+    delete: async (id: string) => unwrapItem(await requestJSON(`/agents/${id}`, { method: 'DELETE' })),
 };
 
 export const factoriesAPI = {
-    getAll: () => fetchAPI('/factories'),
-    getOne: (id: string) => fetchAPI(`/factories/${id}`),
-    create: (data: Record<string, unknown>) => postAPI('/factories', data),
-    update: (id: string, data: Record<string, unknown>) => putAPI(`/factories/${id}`, data),
-    delete: (id: string) => deleteAPI(`/factories/${id}`)
+    getAll: async () => unwrapList(await requestJSON('/factories')),
+    getOne: async (id: string) => unwrapItem(await requestJSON(`/factories/${id}`)),
+    getDeliveries: async (id: string) => unwrapList(await requestJSON(`/factories/${id}/deliveries`)),
+    create: async (data: Record<string, unknown>) => unwrapItem(await requestJSON('/factories', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    })),
+    update: async (id: string, data: Record<string, unknown>) => unwrapItem(await requestJSON(`/factories/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    })),
+    delete: async (id: string) => unwrapItem(await requestJSON(`/factories/${id}`, { method: 'DELETE' })),
 };
 
 export const inputsAPI = {
-    getAll: () => fetchAPI('/inputs'),
-    getOne: (id: string) => fetchAPI(`/inputs/${id}`),
-    create: (data: Record<string, unknown>) => postAPI('/inputs', data),
-    update: (id: string, data: Record<string, unknown>) => putAPI(`/inputs/${id}`, data),
-    delete: (id: string) => deleteAPI(`/inputs/${id}`)
+    getAll: async () => unwrapList(await requestJSON('/inputs')),
+    getOne: async (id: string) => unwrapItem(await requestJSON(`/inputs/${id}`)),
+    create: async (data: Record<string, unknown>) => unwrapItem(await requestJSON('/inputs', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    })),
+    update: async (id: string, data: Record<string, unknown>) => unwrapItem(await requestJSON(`/inputs/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    })),
+    delete: async (id: string) => unwrapItem(await requestJSON(`/inputs/${id}`, { method: 'DELETE' })),
 };
 
 export const milkQualityAPI = {
-    getAll: () => fetchAPI('/milk-quality'),
-    getOne: (id: string) => fetchAPI(`/milk-quality/${id}`),
-    create: (data: Record<string, unknown>) => postAPI('/milk-quality', data),
-    update: (id: string, data: Record<string, unknown>) => putAPI(`/milk-quality/${id}`, data),
-    delete: (id: string) => deleteAPI(`/milk-quality/${id}`)
+    getAll: async () => unwrapList(await requestJSON('/milk-quality')),
+    getOne: async (id: string) => unwrapItem(await requestJSON(`/milk-quality/${id}`)),
+    create: async (data: Record<string, unknown>) => unwrapItem(await requestJSON('/milk-quality', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    })),
+    update: async (id: string, data: Record<string, unknown>) => unwrapItem(await requestJSON(`/milk-quality/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    })),
+    delete: async (id: string) => unwrapItem(await requestJSON(`/milk-quality/${id}`, { method: 'DELETE' })),
 };
 
 export const loansAPI = {
-    getAll: () => fetchAPI('/loans'),
-    getOne: (id: string) => fetchAPI(`/loans/${id}`),
-    getByFarmer: (farmerId: string) => fetchAPI(`/loans/farmer/${farmerId}`),
-    create: (data: Record<string, unknown>) => postAPI('/loans', data),
-    update: (id: string, data: Record<string, unknown>) => putAPI(`/loans/${id}`, data),
-    delete: (id: string) => deleteAPI(`/loans/${id}`)
+    getAll: async () => unwrapList(await requestJSON('/loans')),
+    getOne: async (id: string) => unwrapItem(await requestJSON(`/loans/${id}`)),
+    getByFarmer: async (farmerId: string) => unwrapList(await requestJSON(`/loans/farmer/${farmerId}`)),
+    getSchedule: async (id: string) => unwrapList(await requestJSON(`/loans/${id}/schedule`)),
+    create: async (data: Record<string, unknown>) => unwrapItem(await requestJSON('/loans', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    })),
+    delete: async (id: string) => unwrapItem(await requestJSON(`/loans/${id}`, { method: 'DELETE' })),
+};
+
+export const loanRepaymentsAPI = {
+    getAll: async (params?: { status?: string; farmerId?: string; month?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.status) query.set('status', params.status);
+        if (params?.farmerId) query.set('farmerId', params.farmerId);
+        if (params?.month) query.set('month', params.month);
+        return unwrapList(await requestJSON(`/loan-repayments${query.toString() ? `?${query.toString()}` : ''}`));
+    },
+    getByLoan: async (loanId: string) => unwrapList(await requestJSON(`/loan-repayments/${loanId}`)),
+    processMonthly: async (month?: string) => unwrapItem(await requestJSON('/loan-repayments/process', {
+        method: 'POST',
+        body: JSON.stringify({ month }),
+    })),
 };
 
 export const deliveriesAPI = {
-    getAll: () => fetchAPI('/deliveries'),
-    getOne: (id: string) => fetchAPI(`/deliveries/${id}`),
-    getByFarmer: (farmerId: string) => fetchAPI(`/deliveries/farmer/${farmerId}`),
-    getRate: (qualityId: string) => fetchAPI(`/deliveries/rate/${qualityId}`),
-    create: (data: Record<string, unknown>) => postAPI('/deliveries', data),
-    update: (id: string, data: Record<string, unknown>) => putAPI(`/deliveries/${id}`, data),
-    delete: (id: string) => deleteAPI(`/deliveries/${id}`)
+    getAll: async () => unwrapList(await requestJSON('/deliveries')),
+    getOne: async (id: string) => unwrapItem(await requestJSON(`/deliveries/${id}`)),
+    getByFarmer: async (farmerId: string) => unwrapList(await requestJSON(`/deliveries/farmer/${farmerId}`)),
+    create: async (data: Record<string, unknown>) => unwrapItem(await requestJSON('/deliveries', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    })),
+    update: async (id: string, data: Record<string, unknown>) => unwrapItem(await requestJSON(`/deliveries/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    })),
+    delete: async (id: string) => unwrapItem(await requestJSON(`/deliveries/${id}`, { method: 'DELETE' })),
 };
 
 export const inputPurchasesAPI = {
-    getAll: () => fetchAPI('/input-purchases'),
-    getOne: (id: string) => fetchAPI(`/input-purchases/${id}`),
-    getByFarmer: (farmerId: string) => fetchAPI(`/input-purchases/farmer/${farmerId}`),
-    getInputDetails: (inputId: string) => fetchAPI(`/input-purchases/input-details/${inputId}`),
-    create: (data: Record<string, unknown>) => postAPI('/input-purchases', data),
-    update: (id: string, data: Record<string, unknown>) => putAPI(`/input-purchases/${id}`, data),
-    delete: (id: string) => deleteAPI(`/input-purchases/${id}`)
+    getAll: async () => unwrapList(await requestJSON('/purchases')),
+    getOne: async (id: string) => unwrapItem(await requestJSON(`/purchases/${id}`)),
+    getByFarmer: async (farmerId: string) => unwrapList(await requestJSON(`/purchases/farmer/${farmerId}`)),
+    create: async (data: Record<string, unknown>) => unwrapItem(await requestJSON('/purchases', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    })),
+    delete: async (id: string) => unwrapItem(await requestJSON(`/purchases/${id}`, { method: 'DELETE' })),
 };
 
 export const salesAPI = {
-    getAll: () => fetchAPI('/sales'),
-    getOne: (id: string) => fetchAPI(`/sales/${id}`),
-    getByAgent: (agentId: string) => fetchAPI(`/sales/agent/${agentId}`),
-    getByFarmer: (farmerId: string) => fetchAPI(`/sales/farmer/${farmerId}`),
-    create: (data: Record<string, unknown>) => postAPI('/sales', data),
-    update: (id: string, data: Record<string, unknown>) => putAPI(`/sales/${id}`, data),
-    delete: (id: string) => deleteAPI(`/sales/${id}`)
+    getAll: async () => unwrapList(await requestJSON('/sales')),
+    getOne: async (id: string) => unwrapItem(await requestJSON(`/sales/${id}`)),
+    getByAgent: async (agentId: string) => unwrapList(await requestJSON(`/sales/agent/${agentId}`)),
+    getByFarmer: async (farmerId: string) => unwrapList(await requestJSON(`/sales/farmer/${farmerId}`)),
+    create: async (data: Record<string, unknown>) => unwrapItem(await requestJSON('/sales', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    })),
+    update: async (id: string, data: Record<string, unknown>) => unwrapItem(await requestJSON(`/sales/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    })),
+    delete: async (id: string) => unwrapItem(await requestJSON(`/sales/${id}`, { method: 'DELETE' })),
 };
 
-// Report APIs
+export const dashboardAPI = {
+    lifetime: async () => unwrapItem(await requestJSON('/dashboard/lifetime')),
+    monthly: async () => unwrapList(await requestJSON('/dashboard/monthly')),
+    topFarmers: async (limit = 5) => unwrapList(await requestJSON(`/dashboard/top-farmers?limit=${limit}`)),
+    agentPerformance: async () => unwrapList(await requestJSON('/dashboard/agent-performance')),
+    loanOverview: async () => unwrapList(await requestJSON('/dashboard/loan-overview')),
+};
+
+function aggregateFarmersByLocation(farmers: Array<{ Location?: string; Age?: number; Gender?: string }>) {
+    const groups = groupBy(farmers, (farmer) => farmer.Location || 'Unknown');
+    return Array.from(groups.entries()).map(([Location, items]) => ({
+        Location,
+        TotalFarmers: items.length,
+        AvgAge: items.length ? items.reduce((acc, farmer) => acc + safeNumber(farmer.Age), 0) / items.length : 0,
+        Males: items.filter((farmer) => String(farmer.Gender || '').toLowerCase() === 'male').length,
+        Females: items.filter((farmer) => String(farmer.Gender || '').toLowerCase() === 'female').length,
+    })).sort((a, b) => b.TotalFarmers - a.TotalFarmers);
+}
+
+function aggregateMonthly<T>(items: T[], getDate: (item: T) => string, reducer: (acc: any, item: T) => void) {
+    const grouped = new Map<string, any>();
+    items.forEach((item) => {
+        const date = getDate(item);
+        const key = monthKey(date);
+        const existing = grouped.get(key) || { key, display: monthDisplay(date) };
+        reducer(existing, item);
+        grouped.set(key, existing);
+    });
+    return Array.from(grouped.values()).sort((a, b) => a.key.localeCompare(b.key));
+}
+
+async function buildStatementSeries() {
+    const farmers = await farmersAPI.getAll() as Array<{ FarmerId: string }>;
+    const results = await Promise.all(farmers.map(async (farmer) => {
+        const [profile, summary, monthly] = await Promise.all([
+            farmersAPI.getOne(farmer.FarmerId),
+            farmersAPI.getSummary(farmer.FarmerId),
+            farmersAPI.getMonthlyEarnings(farmer.FarmerId),
+        ]);
+        return { profile: profile as any, summary: summary as any, monthly: monthly as any[] };
+    }));
+
+    const statements = results.flatMap(({ profile, monthly }) => monthly.map((row: any) => ({
+        FarmerId: profile.FarmerId,
+        FarmerName: profile.FarmerName,
+        FarmerLocation: profile.Location,
+        ProfilePicUrl: profile.ProfilePicUrl,
+        MonthDisplay: row.SummaryMonth || row.MonthDisplay || row.SummaryMonth,
+        DeliveryAmount: safeNumber(row.MilkSalesAmount || row.DeliveryAmount),
+        TotalDeductions: safeNumber(row.LoanDeductions || row.TotalDeductions) + safeNumber(row.InputsPurchased || row.InputsDeduction) + safeNumber(row.AgentCommission || row.CommissionDeduction),
+        NetPayment: safeNumber(row.NetEarnings || row.NetPayment),
+        PaymentStatus: row.PaymentStatus || (safeNumber(row.NetEarnings || row.NetPayment) >= 0 ? 'Credit' : 'Deficit'),
+    })));
+
+    return { farmers, results, statements };
+}
+
 export const reportsAPI = {
-    farmersList: () => fetchAPI('/reports/farmers-list'),
-    farmersListSummary: () => fetchAPI('/reports/farmers-list/summary'),
-    agentsCommission: () => fetchAPI('/reports/agents-commission'),
-    agentsCommissionSummary: () => fetchAPI('/reports/agents-commission/summary'),
-    agentDetail: (id: string) => fetchAPI(`/reports/agents-commission/agent/${id}`),
-    agentsTrends: () => fetchAPI('/reports/agents-commission/trends'),
-    deliveries: () => fetchAPI('/reports/deliveries'),
-    deliveriesOverview: () => fetchAPI('/reports/deliveries/overview'),
-    deliveriesMonthly: () => fetchAPI('/reports/deliveries/monthly-totals'),
-    deliveriesFarmer: (id: string) => fetchAPI(`/reports/deliveries/farmer/${id}`),
-    deliveriesFarmerDetail: (id: string) => fetchAPI(`/reports/deliveries/farmer/${id}/details`),
-    loans: () => fetchAPI('/reports/loans'),
-    loansMonthly: () => fetchAPI('/reports/loans/monthly'),
-    loansFarmerOverview: () => fetchAPI('/reports/loans/farmer-overview'),
-    loansActive: () => fetchAPI('/reports/loans/active'),
-    loansFarmer: (id: string) => fetchAPI(`/reports/loans/farmer/${id}`),
-    loansPortfolio: () => fetchAPI('/reports/loans/portfolio'),
-    purchases: () => fetchAPI('/reports/purchases'),
-    purchasesMonthly: () => fetchAPI('/reports/purchases/monthly-totals'),
-    purchasesFarmerOverview: () => fetchAPI('/reports/purchases/farmer-overview'),
-    purchasesPopular: () => fetchAPI('/reports/purchases/popular-inputs'),
-    purchasesFarmer: (id: string) => fetchAPI(`/reports/purchases/farmer/${id}`),
-    purchasesPortfolio: () => fetchAPI('/reports/purchases/portfolio'),
-    statements: () => fetchAPI('/reports/farmer-statements'),
-    statementFarmer: (id: string) => fetchAPI(`/reports/farmer-statements/farmer/${id}`),
-    statementLifetime: () => fetchAPI('/reports/farmer-statements/lifetime'),
-    statementProfile: (id: string) => fetchAPI(`/reports/farmer-statements/farmer/${id}/profile`),
-    statementTrends: () => fetchAPI('/reports/farmer-statements/monthly-trends'),
-    statementSociety: () => fetchAPI('/reports/farmer-statements/society-summary')
+    farmersList: async () => farmersAPI.getAll(),
+    farmersListSummary: async () => aggregateFarmersByLocation(await farmersAPI.getAll() as Array<{ Location?: string; Age?: number; Gender?: string }>),
+
+    agentsCommissionSummary: async () => dashboardAPI.agentPerformance(),
+    agentsTrends: async () => {
+        const sales = await salesAPI.getAll();
+        return aggregateMonthly(sales as Array<{ SaleDate: string; SaleAmount: number; Commission: number }>,
+            (item) => item.SaleDate,
+            (acc, item) => {
+                acc.SaleMonthDisplay = acc.display;
+                acc.TotalSales = safeNumber(acc.TotalSales) + safeNumber(item.SaleAmount);
+                acc.TotalCommission = safeNumber(acc.TotalCommission) + safeNumber(item.Commission);
+            });
+    },
+
+    deliveries: async () => deliveriesAPI.getAll(),
+    deliveriesOverview: async () => {
+        const deliveries = await deliveriesAPI.getAll();
+        const grouped = groupBy(deliveries as Array<any>, (row) => row.FarmerId || 'Unknown');
+        return Array.from(grouped.entries()).map(([FarmerId, rows]) => ({
+            FarmerId,
+            FarmerName: rows[0]?.FarmerName || 'Unknown',
+            FarmerLocation: rows[0]?.FarmerLocation || rows[0]?.Location || 'Unknown',
+            TotalDeliveries: rows.length,
+            TotalLitres: rows.reduce((acc, row) => acc + safeNumber(row.MilkQuantity), 0),
+            TotalRevenue: rows.reduce((acc, row) => acc + safeNumber(row.Amount), 0),
+        })).sort((a, b) => b.TotalRevenue - a.TotalRevenue);
+    },
+    deliveriesMonthly: async () => {
+        const deliveries = await deliveriesAPI.getAll();
+        return aggregateMonthly(deliveries as Array<any>, (item) => item.DeliveryDate, (acc, item) => {
+            acc.DeliveryMonthDisplay = acc.display;
+            acc.ActiveFarmers = acc.ActiveFarmers || 0;
+            acc.TotalDeliveries = safeNumber(acc.TotalDeliveries) + 1;
+            acc.TotalLitres = safeNumber(acc.TotalLitres) + safeNumber(item.MilkQuantity);
+            acc.TotalRevenue = safeNumber(acc.TotalRevenue) + safeNumber(item.Amount);
+            acc.__farmerSet = acc.__farmerSet || new Set<string>();
+            if (item.FarmerId) acc.__farmerSet.add(item.FarmerId);
+            acc.ActiveFarmers = acc.__farmerSet.size;
+        }).map((row) => {
+            delete row.__farmerSet;
+            return row;
+        });
+    },
+    deliveriesFarmer: async (id: string) => deliveriesAPI.getByFarmer(id),
+    deliveriesFarmerDetail: async (id: string) => deliveriesAPI.getByFarmer(id),
+
+    loans: async () => loansAPI.getAll(),
+    loansMonthly: async () => {
+        const loans = await loansAPI.getAll();
+        return aggregateMonthly(loans as Array<any>, (item) => item.DateBorrowed, (acc, item) => {
+            acc.BorrowedMonthDisplay = acc.display;
+            acc.TotalPrincipal = safeNumber(acc.TotalPrincipal) + safeNumber(item.LoanAmount);
+            acc.TotalOutstanding = safeNumber(acc.TotalOutstanding) + safeNumber(item.OutstandingBalance || item.TotalOutstanding || (safeNumber(item.LoanAmount) - safeNumber(item.TotalRepaid)));
+            acc.ActiveLoans = safeNumber(acc.ActiveLoans) + (String(item.LoanStatus || '').toLowerCase() === 'active' ? 1 : 0);
+        });
+    },
+    loansFarmerOverview: async () => dashboardAPI.loanOverview(),
+    loansActive: async () => {
+        const loans = await dashboardAPI.loanOverview();
+        return (loans as Array<any>)
+            .filter((loan) => String(loan.LoanStatus || '').toLowerCase() === 'active')
+            .sort((a, b) => safeNumber(b.OutstandingBalance || b.TotalOutstanding) - safeNumber(a.OutstandingBalance || a.TotalOutstanding))
+            .map((loan) => ({
+                LoanId: loan.LoanId,
+                FarmerName: loan.FarmerName,
+                LoanAmount: safeNumber(loan.LoanAmount),
+                TotalRepayable: safeNumber(loan.TotalRepayable || loan.LoanAmount),
+                OutstandingBalance: safeNumber(loan.OutstandingBalance || loan.TotalOutstanding),
+                DueDateDisplay: loan.DueDateDisplay || loan.EstimatedCompletion || loan.CompletionDate || '—',
+            }));
+    },
+    loansFarmer: async (id: string) => loansAPI.getByFarmer(id),
+    loansPortfolio: async () => {
+        const loans = await dashboardAPI.loanOverview();
+        const rows = loans as Array<any>;
+        return {
+            TotalLoans: rows.length,
+            ActiveLoans: rows.filter((loan) => String(loan.LoanStatus || '').toLowerCase() === 'active').length,
+            CompletedLoans: rows.filter((loan) => String(loan.LoanStatus || '').toLowerCase() === 'completed').length,
+            TotalOutstanding: rows.reduce((acc, loan) => acc + safeNumber(loan.OutstandingBalance || loan.TotalOutstanding), 0),
+            TotalInterestEarned: rows.reduce((acc, loan) => acc + Math.max(0, safeNumber(loan.LoanAmount) * 0.1 * (safeNumber(loan.RepaymentPeriod) / 12)), 0),
+            TotalDisbursed: rows.reduce((acc, loan) => acc + safeNumber(loan.LoanAmount), 0),
+        };
+    },
+
+    purchases: async () => inputPurchasesAPI.getAll(),
+    purchasesMonthly: async () => {
+        const purchases = await inputPurchasesAPI.getAll();
+        return aggregateMonthly(purchases as Array<any>, (item) => item.DateOfPurchase, (acc, item) => {
+            acc.PurchaseMonthDisplay = acc.display;
+            acc.TotalTransactions = safeNumber(acc.TotalTransactions) + 1;
+            acc.TotalSpent = safeNumber(acc.TotalSpent) + safeNumber(item.PurchaseAmount);
+        });
+    },
+    purchasesFarmerOverview: async () => inputPurchasesAPI.getAll(),
+    purchasesPopular: async () => {
+        const purchases = await inputPurchasesAPI.getAll();
+        const grouped = groupBy(purchases as Array<any>, (row) => row.InputId || 'Unknown');
+        return Array.from(grouped.entries()).map(([InputId, rows]) => ({
+            InputId,
+            InputName: rows[0]?.InputName || 'Unknown',
+            TimesPurchased: rows.length,
+            TotalRevenue: rows.reduce((acc, row) => acc + safeNumber(row.PurchaseAmount), 0),
+            UniqueBuyers: new Set(rows.map((row) => row.FarmerId).filter(Boolean)).size,
+        })).sort((a, b) => b.TotalRevenue - a.TotalRevenue);
+    },
+    purchasesFarmer: async (id: string) => inputPurchasesAPI.getByFarmer(id),
+    purchasesPortfolio: async () => {
+        const purchases = await inputPurchasesAPI.getAll();
+        return {
+            TotalTransactions: purchases.length,
+            TotalBuyers: new Set((purchases as Array<any>).map((row) => row.FarmerId).filter(Boolean)).size,
+            UniqueInputs: new Set((purchases as Array<any>).map((row) => row.InputId).filter(Boolean)).size,
+            TotalRevenue: (purchases as Array<any>).reduce((acc, row) => acc + safeNumber(row.PurchaseAmount), 0),
+        };
+    },
+
+    statements: async () => (await buildStatementSeries()).statements,
+    statementFarmer: async (id: string) => {
+        const profile = await farmersAPI.getOne(id) as Record<string, unknown>;
+        const summary = await farmersAPI.getSummary(id) as Record<string, unknown>;
+        const monthly = await farmersAPI.getMonthlyEarnings(id) as any[];
+        return {
+            profile: {
+                ...profile,
+                ...summary,
+            },
+            monthlyStatements: monthly,
+        };
+    },
+    statementLifetime: async () => {
+        const farmers = await farmersAPI.getAll() as Array<{ FarmerId: string }>;
+        const results = await Promise.all(farmers.map(async (farmer) => farmersAPI.getSummary(farmer.FarmerId)));
+        return results;
+    },
+    statementProfile: async (id: string) => {
+        const profile = await farmersAPI.getOne(id) as Record<string, unknown>;
+        const summary = await farmersAPI.getSummary(id) as Record<string, unknown>;
+        const monthlyStatements = await farmersAPI.getMonthlyEarnings(id) as any[];
+        return {
+            profile: {
+                ...profile,
+                ...summary,
+                FarmerLocation: profile.Location,
+                FarmerContact: profile.Contact,
+            },
+            monthlyStatements,
+        };
+    },
+    statementTrends: async () => {
+        const series = await buildStatementSeries();
+        const grouped = aggregateMonthly(series.statements as Array<any>, (item) => item.MonthDisplay || '', (acc, item) => {
+            acc.MonthDisplay = acc.display;
+            acc.TotalDeliveries = safeNumber(acc.TotalDeliveries) + safeNumber(item.DeliveryAmount);
+            acc.TotalAllDeductions = safeNumber(acc.TotalAllDeductions) + safeNumber(item.TotalDeductions);
+            acc.TotalNetPayments = safeNumber(acc.TotalNetPayments) + safeNumber(item.NetPayment);
+        });
+        return grouped;
+    },
+    statementSociety: async () => unwrapItem(await requestJSON('/dashboard/lifetime')),
 };

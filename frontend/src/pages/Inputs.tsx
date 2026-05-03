@@ -4,9 +4,8 @@ import { Package, DollarSign, TrendingUp, TrendingDown, Search, Plus, Edit3, Tra
 import StatCard from '../components/common/StatCard';
 import Modal from '../components/common/Modal';
 import InputForm from '../components/forms/InputForm';
+import { inputsAPI } from '../api';
 import '../styles/Inputs.css';
-
-const API = 'http://localhost:3001/api';
 
 interface Input { InputId: string; InputName: string; InputPrice: number; }
 
@@ -19,7 +18,7 @@ const Inputs = () => {
   const animated = useRef(false);
 
   const load = async () => {
-    try { const res = await fetch(`${API}/inputs`); const data = await res.json(); setInputs(Array.isArray(data) ? data : data.recordset ?? []); }
+    try { setInputs(await inputsAPI.getAll() as Input[]); }
     catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
@@ -44,7 +43,7 @@ const Inputs = () => {
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete input "${name}"?`)) return;
-    try { await fetch(`${API}/inputs/${id}`, { method: 'DELETE' }); load(); } catch (err: any) { alert(err.message); }
+    try { await inputsAPI.delete(id); load(); } catch (err: any) { alert(err.message); }
   };
 
   if (loading) return <div className="page-loading"><div className="loading-spinner" /><p>Loading inputs...</p></div>;

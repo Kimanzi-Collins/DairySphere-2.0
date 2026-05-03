@@ -11,6 +11,7 @@ import {
     Legend,
 } from 'recharts';
 import GlassCard from '../../components/common/GlassCard';
+import ExportButtons from '../../components/common/ExportButtons';
 import { reportsAPI } from '../../api';
 import { formatCurrency } from '../../utils/formatCurrency';
 
@@ -74,8 +75,25 @@ export default function StatementsReport() {
     return (
         <div>
             <div className="glass-card" style={{ padding: '22px 24px', marginBottom: 18 }}>
-                <h2 style={titleStyle}>Farmer Statements Report</h2>
-                <p style={subTitleStyle}>Monthly payment statements across all farmers with deductions overview.</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
+                    <div>
+                        <h2 style={titleStyle}>Farmer Statements Report</h2>
+                        <p style={subTitleStyle}>Monthly payment statements across all farmers with deductions overview.</p>
+                    </div>
+                    <ExportButtons
+                        filename="farmer-statements-report.xlsx"
+                        columns={[
+                            { header: 'Farmer ID', key: 'FarmerId' },
+                            { header: 'Farmer Name', key: 'FarmerName' },
+                            { header: 'Month', key: 'MonthDisplay' },
+                            { header: 'Deliveries', key: 'DeliveryAmount', isCurrency: true },
+                            { header: 'Deductions', key: 'TotalDeductions', isCurrency: true },
+                            { header: 'Net Payment', key: 'NetPayment', isCurrency: true },
+                            { header: 'Status', key: 'PaymentStatus' },
+                        ]}
+                        rows={recentStatements}
+                    />
+                </div>
             </div>
 
             <div style={statsGridStyle}>

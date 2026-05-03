@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
-import { Bell, Search, Sparkles, Sun, Moon } from 'lucide-react';
+import { Bell, Search, Sparkles, Sun, Moon, LogOut, ShieldCheck } from 'lucide-react';
+import { authAPI } from '../../api';
 
 const titles: Record<string, string> = {
     '/': 'Dashboard',
@@ -26,16 +27,55 @@ export default function Header() {
     const ref = useRef<HTMLDivElement>(null);
     const titleRef = useRef<HTMLHeadingElement>(null);
     const location = useLocation();
+    const navigate = useNavigate();
     const title = titles[location.pathname] || 'DairySphere';
     const [theme, setTheme] = useState<'dark' | 'light'>(() => {
         const stored = localStorage.getItem('dairyweb_theme');
         return stored === 'light' ? 'light' : 'dark';
     });
+    const [user, setUser] = useState<{ username?: string; email?: string; role?: string } | null>(null);
+
+    useEffect(() => {
+        const token = localStorage.getItem('dairysphere_token');
+        if (!token) {
+            setUser(null);
+            return;
+        }
+
+        let mounted = true;
+        authAPI.me()
+            .then((response) => {
+                if (!mounted) return;
+                const payload = response as any;
+                const data = payload.data || payload;
+                setUser(data ? {
+                    username: data.Username || data.username,
+                    email: data.Email || data.email,
+                    role: data.Role || data.role,
+                } : null);
+            })
+            .catch(() => {
+                localStorage.removeItem('dairysphere_token');
+                localStorage.removeItem('dairysphere_user');
+                if (mounted) setUser(null);
+            });
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     useEffect(() => {
         document.body.setAttribute('data-theme', theme);
         localStorage.setItem('dairyweb_theme', theme);
     }, [theme]);
+
+    const handleSignOut = () => {
+        localStorage.removeItem('dairysphere_token');
+        localStorage.removeItem('dairysphere_user');
+        setUser(null);
+        navigate('/signin');
+    };
 
     useLayoutEffect(() => {
         if (!titleRef.current) return;
@@ -103,12 +143,20 @@ export default function Header() {
                     <Sparkles size={17} color="var(--primary)" />
                 </div>
 
-                <div style={styles.userWrap}>
-                    <div style={styles.avatar}>AD</div>
-                    <div>
-                        <div style={styles.userName}>Admin</div>
-                        <div style={styles.userRole}>Manager</div>
+                <div style={styles.profileCard}>
+                    <div style={styles.profileAvatar}>
+                        {(user?.username || 'Guest').slice(0, 2).toUpperCase()}
                     </div>
+                    <div style={{ minWidth: 0 }}>
+                        <div style={styles.profileName}>{user?.username || 'Guest user'}</div>
+                        <div style={styles.profileMetaRow}>
+                            <ShieldCheck size={11} color="var(--secondary)" />
+                            <span style={styles.profileRole}>{user?.role || 'Signed out'}</span>
+                        </div>
+                    </div>
+                    <button type="button" onClick={handleSignOut} style={styles.signOutBtn} title="Sign out">
+                        <LogOut size={14} />
+                    </button>
                 </div>
             </div>
         </div>
@@ -191,17 +239,21 @@ const styles: Record<string, React.CSSProperties> = {
         alignItems: 'center',
         justifyContent: 'center',
     },
-    userWrap: {
+    profileCard: {
         display: 'flex',
         alignItems: 'center',
         gap: '10px',
         marginLeft: '8px',
-        paddingLeft: '14px',
-        borderLeft: '1px solid var(--glass-border)',
+        padding: '10px 12px',
+        border: '1px solid var(--glass-border)',
+        borderRadius: '14px',
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))',
+        boxShadow: '0 12px 30px rgba(0,0,0,0.22)',
+        maxWidth: '260px',
     },
-    avatar: {
-        width: '34px', height: '34px',
-        borderRadius: '10px',
+    profileAvatar: {
+        width: '36px', height: '36px',
+        borderRadius: '12px',
         background: 'linear-gradient(135deg, var(--primary), #6d5ce7)',
         display: 'flex',
         alignItems: 'center',
@@ -209,14 +261,37 @@ const styles: Record<string, React.CSSProperties> = {
         color: '#fff',
         fontSize: '12px',
         fontWeight: 700,
+        flexShrink: 0,
     },
-    userName: {
+    profileName: {
         fontSize: '12px',
         fontWeight: 600,
         color: 'var(--text-bright)',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
     },
-    userRole: {
+    profileMetaRow: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '5px',
+        marginTop: '2px',
+    },
+    profileRole: {
         fontSize: '10px',
         color: 'var(--text-faint)',
+    },
+    signOutBtn: {
+        width: '30px',
+        height: '30px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: '1px solid var(--glass-border)',
+        borderRadius: '10px',
+        background: 'rgba(255,255,255,0.04)',
+        color: 'var(--text-muted)',
+        cursor: 'pointer',
+        flexShrink: 0,
     },
 };

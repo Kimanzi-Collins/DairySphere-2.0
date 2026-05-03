@@ -14,7 +14,7 @@ interface FarmerCardProps {
     onEditProfilePic?: (farmer: Farmer) => void;
 }
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = 'http://localhost:5000';
 
 export default function FarmerCard({ farmer, index, onEditProfilePic }: FarmerCardProps) {
     const wrapperRef = useRef<HTMLDivElement>(null);

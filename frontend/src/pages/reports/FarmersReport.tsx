@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MapPin, Users, UserRound, CalendarRange } from 'lucide-react';
 import GlassCard from '../../components/common/GlassCard';
+import ExportButtons from '../../components/common/ExportButtons';
 
 import { reportsAPI } from '../../api';
 
@@ -74,12 +75,29 @@ export default function FarmersReport() {
     return (
         <div>
             <div className="glass-card" style={{ padding: '22px 24px', marginBottom: 18 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
+                    <div>
                 <h2 style={{ color: 'var(--text-bright)', fontSize: 20, fontWeight: 800, marginBottom: 4 }}>
                     Farmers Report
                 </h2>
                 <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                     Registered farmers grouped by location with demographic summary.
                 </p>
+                    </div>
+                    <ExportButtons
+                        filename="farmers-report.xlsx"
+                        columns={[
+                            { header: 'ID', key: 'FarmerId' },
+                            { header: 'Name', key: 'FarmerName' },
+                            { header: 'Age', key: 'Age' },
+                            { header: 'Gender', key: 'Gender' },
+                            { header: 'Contact', key: 'Contact' },
+                            { header: 'Location', key: 'Location' },
+                            { header: 'Enrolment Date', key: 'EnrolmentDate' },
+                        ]}
+                        rows={rows}
+                    />
+                </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 18 }}>

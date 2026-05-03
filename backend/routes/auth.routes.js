@@ -3,11 +3,15 @@ const express               = require('express');
 const router                = express.Router();
 const { login,
         changePassword,
-        getMe }             = require('../controllers/auth.controller');
+        getMe,
+        register }          = require('../controllers/auth.controller');
 const { authenticate }      = require('../middleware/auth');
 
 // POST /api/auth/login
 router.post('/login', login);
+
+// POST /api/auth/register
+router.post('/register', register);
 
 // GET  /api/auth/me  (protected)
 router.get('/me', authenticate, getMe);

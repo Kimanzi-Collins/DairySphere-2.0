@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API = 'http://localhost:3001/api';
+import { inputsAPI } from '../../api';
 
 interface Props {
   mode: 'add' | 'edit';
@@ -29,13 +28,12 @@ const InputForm = ({ mode, initialData, onSuccess, onClose }: Props) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true); setError('');
     try {
-      const url = mode === 'add' ? `${API}/inputs` : `${API}/inputs/${initialData?.InputId}`;
-      const res = await fetch(url, {
-        method: mode === 'add' ? 'POST' : 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, inputPrice: Number(formData.inputPrice) }),
-      });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to save');
+      const payload = { ...formData, inputPrice: Number(formData.inputPrice) };
+      if (mode === 'add') {
+        await inputsAPI.create(payload);
+      } else {
+        await inputsAPI.update(initialData?.InputId, payload);
+      }
       onSuccess();
     } catch (err: any) { setError(err.message); }
     finally { setLoading(false); }

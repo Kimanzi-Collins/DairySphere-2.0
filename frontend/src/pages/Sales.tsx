@@ -3,9 +3,8 @@ import { gsap } from 'gsap';
 import { TrendingUp, DollarSign, Percent, Users, Search, Plus, Edit3, Trash2 } from 'lucide-react';
 import StatCard from '../components/common/StatCard';
 import SaleForm from '../components/forms/SaleForm';
+import { salesAPI } from '../api';
 import '../styles/Transactions.css';
-
-const API = 'http://localhost:3001/api';
 
 const Sales = () => {
   const [sales, setSales] = useState<any[]>([]);
@@ -16,7 +15,7 @@ const Sales = () => {
   const animated = useRef(false);
 
   const load = async () => {
-    try { const res = await fetch(`${API}/sales`); const data = await res.json(); setSales(Array.isArray(data) ? data : data.recordset ?? []); }
+    try { setSales(await salesAPI.getAll() as any[]); }
     catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
@@ -47,7 +46,7 @@ const Sales = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this sale?')) return;
-    try { await fetch(`${API}/sales/${id}`, { method: 'DELETE' }); load(); } catch (err: any) { alert(err.message); }
+    try { await salesAPI.delete(id); load(); } catch (err: any) { alert(err.message); }
   };
 
   if (loading) return <div className="page-loading"><div className="loading-spinner" /><p>Loading sales...</p></div>;

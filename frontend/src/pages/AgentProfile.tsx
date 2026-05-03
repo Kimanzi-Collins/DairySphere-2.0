@@ -5,9 +5,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Wallet, DollarSign, TrendingUp } from 'lucide-react';
 import StatCard from '../components/common/StatCard';
 import { getEntityProfilePic } from '../utils/entityProfilePics';
+import { agentsAPI, salesAPI } from '../api';
 import '../styles/AgentProfile.css';
-
-const API = 'http://localhost:3001/api';
 
 const AgentProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,34 +20,26 @@ const AgentProfile = () => {
 
   const load = async () => {
     try {
-      // Fetch agent details
-      const agentRes = await fetch(`${API}/agents/${id}`);
-      const agentData = await agentRes.json();
-      const agentObj = Array.isArray(agentData) ? agentData[0] : agentData.recordset?.[0] ?? agentData;
+      const agentObj = await agentsAPI.getOne(id || '');
       console.log('Agent profile:', agentObj);
       setAgent(agentObj);
 
-      // Fetch sales for this agent
       try {
-        const salesRes = await fetch(`${API}/sales?agentId=${id}`);
-        if (salesRes.ok) {
-          const salesData = await salesRes.json();
-          const salesList = Array.isArray(salesData) ? salesData : salesData.recordset ?? [];
-          setSales(salesList);
+        const salesList = await salesAPI.getByAgent(id || '') as any[];
+        setSales(salesList);
 
-          // Build monthly breakdown
-          const monthly: Record<string, { month: string; salesCount: number; totalAmount: number; commission: number }> = {};
-          salesList.forEach((s: any) => {
-            const date = new Date(s.SaleDate || s.DateSold || s.Date);
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            const label = date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
-            if (!monthly[key]) monthly[key] = { month: label, salesCount: 0, totalAmount: 0, commission: 0 };
-            monthly[key].salesCount += 1;
-            monthly[key].totalAmount += Number(s.SaleAmount || s.Amount || 0);
-            monthly[key].commission += Number(s.Commission || s.CommissionAmount || 0);
-          });
-          setMonthlyData(Object.values(monthly).sort((a, b) => a.month.localeCompare(b.month)));
-        }
+        const monthly: Record<string, { month: string; sortKey: string; salesCount: number; totalAmount: number; commission: number }> = {};
+        salesList.forEach((s: any) => {
+          const date = new Date(s.SaleDate || s.DateSold || s.Date);
+          if (Number.isNaN(date.getTime())) return;
+          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          const label = date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+          if (!monthly[key]) monthly[key] = { month: label, sortKey: key, salesCount: 0, totalAmount: 0, commission: 0 };
+          monthly[key].salesCount += 1;
+          monthly[key].totalAmount += Number(s.SaleAmount || s.Amount || 0);
+          monthly[key].commission += Number(s.Commission || s.CommissionAmount || 0);
+        });
+        setMonthlyData(Object.values(monthly).sort((a, b) => a.sortKey.localeCompare(b.sortKey)));
       } catch { console.log('Sales data not available'); }
     } catch (err) { console.error('Failed to load agent profile:', err); }
     finally { setLoading(false); }

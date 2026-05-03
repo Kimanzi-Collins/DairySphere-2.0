@@ -3,9 +3,8 @@ import { gsap } from 'gsap';
 import { CreditCard, DollarSign, Clock, Search, Plus, Edit3, Trash2 } from 'lucide-react';
 import StatCard from '../components/common/StatCard';
 import LoanForm from '../components/forms/LoanForm';
+import { loansAPI } from '../api';
 import '../styles/Transactions.css';
-
-const API = 'http://localhost:3001/api';
 
 const Loans = () => {
   const [loans, setLoans] = useState<any[]>([]);
@@ -16,7 +15,7 @@ const Loans = () => {
   const animated = useRef(false);
 
   const load = async () => {
-    try { const res = await fetch(`${API}/loans`); const data = await res.json(); setLoans(Array.isArray(data) ? data : data.recordset ?? []); }
+    try { setLoans(await loansAPI.getAll() as any[]); }
     catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
@@ -47,7 +46,7 @@ const Loans = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this loan?')) return;
-    try { await fetch(`${API}/loans/${id}`, { method: 'DELETE' }); load(); } catch (err: any) { alert(err.message); }
+    try { await loansAPI.delete(id); load(); } catch (err: any) { alert(err.message); }
   };
 
   if (loading) return <div className="page-loading"><div className="loading-spinner" /><p>Loading loans...</p></div>;

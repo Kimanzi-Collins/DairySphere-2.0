@@ -12,7 +12,7 @@ interface FarmerFormProps {
 }
 
 export default function FarmerForm({ isOpen, onClose, onSaved, editFarmer }: FarmerFormProps) {
-    const API_BASE = 'http://localhost:3001';
+    const API_BASE = 'http://localhost:5000';
     const [form, setForm] = useState({
         farmerName: '',
         dateOfBirth: '',

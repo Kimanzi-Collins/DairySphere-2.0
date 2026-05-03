@@ -6,9 +6,8 @@ import StatCard from '../components/common/StatCard';
 import Modal from '../components/common/Modal';
 import FactoryForm from '../components/forms/FactoryForm';
 import { fileToDataUrl, getEntityProfilePic, setEntityProfilePic } from '../utils/entityProfilePics';
+import { factoriesAPI, deliveriesAPI } from '../api';
 import '../styles/Factories.css';
-
-const API = 'http://localhost:3001/api';
 
 interface Factory { FactoryId: string; FactoryName: string; Location: string; Contact: string; }
 
@@ -33,15 +32,12 @@ const Factories = () => {
 
   const load = async () => {
     try {
-      const res = await fetch(`${API}/factories`);
-      const data = await res.json();
-      setFactories(Array.isArray(data) ? data : data.recordset ?? []);
-
-      const deliveriesRes = await fetch(`${API}/deliveries`);
-      if (deliveriesRes.ok) {
-        const deliveriesData = await deliveriesRes.json();
-        setDeliveries(Array.isArray(deliveriesData) ? deliveriesData : deliveriesData.recordset ?? []);
-      }
+      const [factoryRows, deliveryRows] = await Promise.all([
+        factoriesAPI.getAll(),
+        deliveriesAPI.getAll(),
+      ]);
+      setFactories(factoryRows as Factory[]);
+      setDeliveries(deliveryRows as Delivery[]);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -79,7 +75,7 @@ const Factories = () => {
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete factory "${name}"?`)) return;
-    try { await fetch(`${API}/factories/${id}`, { method: 'DELETE' }); load(); } catch (err: any) { alert(err.message); }
+    try { await factoriesAPI.delete(id); load(); } catch (err: any) { alert(err.message); }
   };
 
   const handleEditPic = (factory: Factory) => {
