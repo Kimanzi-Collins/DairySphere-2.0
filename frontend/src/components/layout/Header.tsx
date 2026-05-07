@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { Bell, Search, Sparkles, Sun, Moon, LogOut, ShieldCheck } from 'lucide-react';
+import AnimatedLogo from '../common/AnimatedLogo';
 import { authAPI } from '../../api';
 
 const titles: Record<string, string> = {
@@ -109,14 +110,17 @@ export default function Header() {
 
     return (
         <div ref={ref} style={styles.header}>
-            <div>
-                <h1 ref={titleRef} style={styles.title}>{title}</h1>
-                <p style={styles.date}>
-                    {new Date().toLocaleDateString('en-KE', {
-                        weekday: 'long', year: 'numeric',
-                        month: 'long', day: 'numeric'
-                    })}
-                </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <AnimatedLogo />
+                <div>
+                    <h1 ref={titleRef} style={styles.title}>{title}</h1>
+                    <p style={styles.date}>
+                        {new Date().toLocaleDateString('en-KE', {
+                            weekday: 'long', year: 'numeric',
+                            month: 'long', day: 'numeric'
+                        })}
+                    </p>
+                </div>
             </div>
 
             <div style={styles.actions}>
